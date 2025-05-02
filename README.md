@@ -1,4 +1,4 @@
--- Updated Universal GUI script with responsive size, vertical tabs, minimize feature, game detection, and enhanced aimbot
+-- Updated Universal GUI script with scrollable frame, repositioned GUI, unified tab, and enhanced Banana Hub style
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,14 +10,10 @@ local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 local StarterGui = game:GetService("StarterGui")
 
--- Detect if player is in Gunfight Arena by PlaceId
-local GUNFIGHT_ARENA_PLACEID = 14518422161
-local inGunfightArena = (game.PlaceId == GUNFIGHT_ARENA_PLACEID)
-
 -- Responsive GUI size based on screen size
 local screenSize = workspace.CurrentCamera.ViewportSize
-local guiWidth = math.clamp(screenSize.X * 0.25, 250, 350)
-local guiHeight = math.clamp(screenSize.Y * 0.6, 300, 450)
+local guiWidth = math.clamp(screenSize.X * 0.22, 280, 350)
+local guiHeight = math.clamp(screenSize.Y * 0.7, 350, 500)
 
 -- Create ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -25,89 +21,36 @@ ScreenGui.Name = "UniversalGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
 
--- Main Frame (responsive size and draggable)
+-- Main Frame (responsive size, draggable, repositioned to left side)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, guiWidth, 0, guiHeight)
-MainFrame.Position = UDim2.new(0.5, -guiWidth/2, 0.5, -guiHeight/2)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BackgroundTransparency = 0.1
+MainFrame.Position = UDim2.new(0, 10, 0.5, -guiHeight/2)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BackgroundTransparency = 0.05
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 MainFrame.Active = true
 MainFrame.Draggable = true
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.CornerRadius = UDim.new(0, 20)
 UICorner.Parent = MainFrame
+
+-- UIStroke for subtle border
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(0, 255, 0)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
 
 -- Title Label
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundTransparency = 1
 Title.Text = "VEX Universal"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 26
+Title.TextSize = 28
 Title.Parent = MainFrame
-
--- Vertical Tab buttons container on left side
-local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(0, 120, 1, -40)
-TabContainer.Position = UDim2.new(0, 0, 0, 40)
-TabContainer.BackgroundTransparency = 1
-TabContainer.Parent = MainFrame
-
-local function createTabButton(text, positionY)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.Position = UDim2.new(0, 0, 0, positionY)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
-    btn.Text = text
-    btn.AutoButtonColor = true
-    btn.Parent = TabContainer
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = btn
-
-    -- Hover effect
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        if btn.BackgroundColor3 ~= Color3.fromRGB(80, 80, 80) then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
-        end
-    end)
-
-    return btn
-end
-
-local UniversalTabButton = createTabButton("Universal", 0)
-local GameTabButton
-if inGunfightArena then
-    GameTabButton = createTabButton("Gunfight Arena", 50)
-end
-
--- Content frames for tabs
-local UniversalTab = Instance.new("Frame")
-UniversalTab.Size = UDim2.new(1, -120, 1, -40)
-UniversalTab.Position = UDim2.new(0, 120, 0, 40)
-UniversalTab.BackgroundTransparency = 1
-UniversalTab.Parent = MainFrame
-
-local GameTab
-if inGunfightArena then
-    GameTab = Instance.new("Frame")
-    GameTab.Size = UDim2.new(1, -120, 1, -40)
-    GameTab.Position = UDim2.new(0, 120, 0, 40)
-    GameTab.BackgroundTransparency = 1
-    GameTab.Visible = false
-    GameTab.Parent = MainFrame
-end
 
 -- Minimize button (small green V icon)
 local MinimizedButton = Instance.new("TextButton")
@@ -126,60 +69,64 @@ MinimizedButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
 end)
 
--- Tab switching logic
-local function setActiveTab(tabButton, tabFrame)
-    UniversalTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    UniversalTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    if inGunfightArena and GameTabButton then
-        GameTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        GameTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
+-- Minimize button on MainFrame
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -40, 0, 10)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+MinimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.TextSize = 20
+MinimizeButton.Text = "-"
+MinimizeButton.Parent = MainFrame
 
-    tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    UniversalTab.Visible = false
-    if inGunfightArena and GameTab then
-        GameTab.Visible = false
-    end
-    tabFrame.Visible = true
-end
-
-UniversalTabButton.MouseButton1Click:Connect(function()
-    setActiveTab(UniversalTabButton, UniversalTab)
+MinimizeButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MinimizedButton.Visible = true
 end)
 
-if inGunfightArena and GameTabButton then
-    GameTabButton.MouseButton1Click:Connect(function()
-        setActiveTab(GameTabButton, GameTab)
-    end)
-end
+-- ScrollFrame for content with UIListLayout
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 55)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.Parent = MainFrame
 
-setActiveTab(UniversalTabButton, UniversalTab)
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.Parent = ScrollFrame
 
--- Utility function to create buttons inside tabs
-local function createButton(text, positionY, parent)
+-- Update CanvasSize based on content
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Utility function to create buttons inside ScrollFrame
+local function createButton(text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, positionY)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.TextColor3 = Color3.fromRGB(0, 255, 0)
     btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
+    btn.TextSize = 20
     btn.Text = text
     btn.AutoButtonColor = true
-    btn.Parent = parent
+    btn.Parent = ScrollFrame
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = btn
 
     -- Hover effect
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
     end)
 
     return btn
@@ -526,51 +473,19 @@ RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, func
     end
 end)
 
--- Minimize button functionality
-local function minimizeGUI()
-    MainFrame.Visible = false
-    MinimizedButton.Visible = true
-end
-
-local function maximizeGUI()
-    MainFrame.Visible = true
-    MinimizedButton.Visible = false
-end
-
--- Add minimize button to MainFrame
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -35, 0, 5)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-MinimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextSize = 20
-MinimizeButton.Text = "-"
-MinimizeButton.Parent = MainFrame
-
-MinimizeButton.MouseButton1Click:Connect(minimizeGUI)
-
-MinimizedButton.MouseButton1Click:Connect(maximizeGUI)
-
--- Create buttons for Universal tab
-local flyButton = createButton("Toggle Fly", 10, UniversalTab)
-local invisButton = createButton("Toggle Invisibility", 60, UniversalTab)
-local espButton = createButton("Toggle ESP", 110, UniversalTab)
-local speedButton = createButton("Toggle Speed", 160, UniversalTab)
-local jumpButton = createButton("Toggle Jump Boost", 210, UniversalTab)
-local teleportButton = createButton("Teleport to Spawn", 260, UniversalTab)
-local autoHealButton = createButton("Toggle Auto Heal", 310, UniversalTab)
-local nightModeButton = createButton("Toggle Night Mode", 360, UniversalTab)
-local antiAFKButton = createButton("Toggle Anti-AFK", 410, UniversalTab)
-local wallClipButton = createButton("Toggle Wall Clip", 460, UniversalTab)
-
--- Create buttons for Gunfight Arena tab if applicable
-local teamCheckButton
-local aimbotButton
-if inGunfightArena and GameTab then
-    teamCheckButton = createButton("Toggle Team Check", 10, GameTab)
-    aimbotButton = createButton("Toggle Aimbot", 60, GameTab)
-end
+-- Create buttons for all features inside ScrollFrame
+local flyButton = createButton("Toggle Fly")
+local invisButton = createButton("Toggle Invisibility")
+local espButton = createButton("Toggle ESP")
+local speedButton = createButton("Toggle Speed")
+local jumpButton = createButton("Toggle Jump Boost")
+local teleportButton = createButton("Teleport to Spawn")
+local autoHealButton = createButton("Toggle Auto Heal")
+local nightModeButton = createButton("Toggle Night Mode")
+local antiAFKButton = createButton("Toggle Anti-AFK")
+local wallClipButton = createButton("Toggle Wall Clip")
+local teamCheckButton = createButton("Toggle Team Check")
+local aimbotButton = createButton("Toggle Aimbot")
 
 -- Button connections
 flyButton.MouseButton1Click:Connect(function()
@@ -659,25 +574,23 @@ wallClipButton.MouseButton1Click:Connect(function()
     end
 end)
 
-if inGunfightArena and GameTab then
-    teamCheckButton.MouseButton1Click:Connect(function()
-        teamCheckEnabled = not teamCheckEnabled
-        if teamCheckEnabled then
-            teamCheckButton.Text = "Disable Team Check"
-        else
-            teamCheckButton.Text = "Enable Team Check"
-        end
-    end)
+teamCheckButton.MouseButton1Click:Connect(function()
+    teamCheckEnabled = not teamCheckEnabled
+    if teamCheckEnabled then
+        teamCheckButton.Text = "Disable Team Check"
+    else
+        teamCheckButton.Text = "Enable Team Check"
+    end
+end)
 
-    aimbotButton.MouseButton1Click:Connect(function()
-        aimbotEnabled = not aimbotEnabled
-        if aimbotEnabled then
-            aimbotButton.Text = "Disable Aimbot"
-        else
-            aimbotButton.Text = "Enable Aimbot"
-        end
-    end)
-end
+aimbotButton.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled
+    if aimbotEnabled then
+        aimbotButton.Text = "Disable Aimbot"
+    else
+        aimbotButton.Text = "Enable Aimbot"
+    end
+end)
 
 -- Anti-detection note:
 -- This script uses minimal events and simple methods to reduce detection risk.
