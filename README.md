@@ -1,4 +1,4 @@
--- Updated Universal GUI script with your provided fly, wall clip, aimbot, ESP, and hitbox expander code, plus aimbot range option
+-- Fixed Universal GUI script with restored tabs, options, and full GUI visibility
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,8 +12,8 @@ local StarterGui = game:GetService("StarterGui")
 
 -- Responsive GUI size based on screen size
 local screenSize = workspace.CurrentCamera.ViewportSize
-local guiWidth = math.clamp(screenSize.X * 0.22, 280, 350)
-local guiHeight = math.clamp(screenSize.Y * 0.7, 350, 500)
+local guiWidth = math.clamp(screenSize.X * 0.25, 300, 400)
+local guiHeight = math.clamp(screenSize.Y * 0.7, 400, 550)
 
 -- Create ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -21,7 +21,7 @@ ScreenGui.Name = "UniversalGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
 
--- Main Frame (responsive size, draggable, repositioned to left side)
+-- Main Frame (responsive size, draggable, positioned left)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, guiWidth, 0, guiHeight)
 MainFrame.Position = UDim2.new(0, 10, 0.5, -guiHeight/2)
@@ -36,7 +36,6 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 20)
 UICorner.Parent = MainFrame
 
--- UIStroke for subtle border
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Color = Color3.fromRGB(0, 255, 0)
 UIStroke.Thickness = 2
@@ -69,7 +68,6 @@ MinimizedButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
 end)
 
--- Minimize button on MainFrame
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
 MinimizeButton.Position = UDim2.new(1, -40, 0, 10)
@@ -85,25 +83,145 @@ MinimizeButton.MouseButton1Click:Connect(function()
     MinimizedButton.Visible = true
 end)
 
--- ScrollFrame for content with UIListLayout
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
-ScrollFrame.Position = UDim2.new(0, 10, 0, 55)
-ScrollFrame.BackgroundTransparency = 1
-ScrollFrame.BorderSizePixel = 0
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.Parent = MainFrame
+-- Tab buttons container (vertical tabs on left)
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(0, 120, 1, -45)
+TabContainer.Position = UDim2.new(0, 0, 0, 45)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = MainFrame
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.Parent = ScrollFrame
+local function createTabButton(text, positionY)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.Position = UDim2.new(0, 0, 0, positionY)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 18
+    btn.Text = text
+    btn.AutoButtonColor = true
+    btn.Parent = TabContainer
 
--- Update CanvasSize based on content
-UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        if btn.BackgroundColor3 ~= Color3.fromRGB(80, 80, 80) then
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+        end
+    end)
+
+    return btn
+end
+
+local UniversalTabButton = createTabButton("Universal", 0)
+local GunfightTabButton = createTabButton("Gunfight Arena", 50)
+
+-- Content frames for tabs
+local UniversalTab = Instance.new("Frame")
+UniversalTab.Size = UDim2.new(1, -120, 1, -45)
+UniversalTab.Position = UDim2.new(0, 120, 0, 45)
+UniversalTab.BackgroundTransparency = 1
+UniversalTab.Parent = MainFrame
+
+local GunfightTab = Instance.new("Frame")
+GunfightTab.Size = UDim2.new(1, -120, 1, -45)
+GunfightTab.Position = UDim2.new(0, 120, 0, 45)
+GunfightTab.BackgroundTransparency = 1
+GunfightTab.Visible = false
+GunfightTab.Parent = MainFrame
+
+-- Tab switching logic
+local function setActiveTab(tabButton, tabFrame)
+    UniversalTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    UniversalTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    GunfightTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    GunfightTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+    tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    UniversalTab.Visible = false
+    GunfightTab.Visible = false
+    tabFrame.Visible = true
+end
+
+UniversalTabButton.MouseButton1Click:Connect(function()
+    setActiveTab(UniversalTabButton, UniversalTab)
 end)
+
+GunfightTabButton.MouseButton1Click:Connect(function()
+    setActiveTab(GunfightTabButton, GunfightTab)
+end)
+
+setActiveTab(UniversalTabButton, UniversalTab)
+
+-- ScrollFrames for each tab
+local UniversalScroll = Instance.new("ScrollingFrame")
+UniversalScroll.Size = UDim2.new(1, -20, 1, -20)
+UniversalScroll.Position = UDim2.new(0, 10, 0, 10)
+UniversalScroll.BackgroundTransparency = 1
+UniversalScroll.BorderSizePixel = 0
+UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+UniversalScroll.ScrollBarThickness = 6
+UniversalScroll.Parent = UniversalTab
+
+local GunfightScroll = Instance.new("ScrollingFrame")
+GunfightScroll.Size = UDim2.new(1, -20, 1, -20)
+GunfightScroll.Position = UDim2.new(0, 10, 0, 10)
+GunfightScroll.BackgroundTransparency = 1
+GunfightScroll.BorderSizePixel = 0
+GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+GunfightScroll.ScrollBarThickness = 6
+GunfightScroll.Parent = GunfightTab
+
+local UniversalLayout = Instance.new("UIListLayout")
+UniversalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UniversalLayout.Padding = UDim.new(0, 10)
+UniversalLayout.Parent = UniversalScroll
+
+local GunfightLayout = Instance.new("UIListLayout")
+GunfightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+GunfightLayout.Padding = UDim.new(0, 10)
+GunfightLayout.Parent = GunfightScroll
+
+UniversalLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, UniversalLayout.AbsoluteContentSize.Y + 10)
+end)
+
+GunfightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, GunfightLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Utility function to create buttons inside a parent frame
+local function createButton(text, parent)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.TextColor3 = Color3.fromRGB(0, 255, 0)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 20
+    btn.Text = text
+    btn.AutoButtonColor = true
+    btn.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+    end)
+
+    return btn
+end
 
 -- Variables for features
 local flying = false
@@ -290,6 +408,7 @@ end
 -- Aimbot feature (updated with your code and range option)
 local aimbotEnabled = false
 local aimbotSmoothness = 0.25
+local aimbotFOV = 150 -- default aimbot range
 
 local function getClosestEnemy()
     local closestPlayer, shortestDistance = nil, math.huge
@@ -331,20 +450,22 @@ RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, func
     end
 end)
 
--- Create buttons for all features inside ScrollFrame
-local flyButton = createButton("Toggle Fly")
-local invisButton = createButton("Toggle Invisibility")
-local espButton = createButton("Toggle ESP")
-local speedButton = createButton("Toggle Speed")
-local jumpButton = createButton("Toggle Jump Boost")
-local teleportButton = createButton("Teleport to Spawn")
-local autoHealButton = createButton("Toggle Auto Heal")
-local nightModeButton = createButton("Toggle Night Mode")
-local antiAFKButton = createButton("Toggle Anti-AFK")
-local wallClipButton = createButton("Toggle Wall Clip")
-local teamCheckButton = createButton("Toggle Team Check")
-local aimbotButton = createButton("Toggle Aimbot")
-local increaseRangeButton = createButton("Increase Aimbot Range")
+-- Create buttons for Universal tab
+local flyButton = createButton("Toggle Fly", UniversalScroll)
+local invisButton = createButton("Toggle Invisibility", UniversalScroll)
+local espButton = createButton("Toggle ESP", UniversalScroll)
+local speedButton = createButton("Toggle Speed", UniversalScroll)
+local jumpButton = createButton("Toggle Jump Boost", UniversalScroll)
+local teleportButton = createButton("Teleport to Spawn", UniversalScroll)
+local autoHealButton = createButton("Toggle Auto Heal", UniversalScroll)
+local nightModeButton = createButton("Toggle Night Mode", UniversalScroll)
+local antiAFKButton = createButton("Toggle Anti-AFK", UniversalScroll)
+local wallClipButton = createButton("Toggle Wall Clip", UniversalScroll)
+
+-- Create buttons for Gunfight Arena tab
+local teamCheckButton = createButton("Toggle Team Check", GunfightScroll)
+local aimbotButton = createButton("Toggle Aimbot", GunfightScroll)
+local increaseRangeButton = createButton("Increase Aimbot Range", GunfightScroll)
 
 -- Button connections
 flyButton.MouseButton1Click:Connect(function()
@@ -452,14 +573,12 @@ aimbotButton.MouseButton1Click:Connect(function()
 end)
 
 increaseRangeButton.MouseButton1Click:Connect(function()
-    if aimbotRangeIncreased then
-        aimbotFOV = 150
-        increaseRangeButton.Text = "Increase Aimbot Range"
-        aimbotRangeIncreased = false
-    else
+    if aimbotFOV == 150 then
         aimbotFOV = 300
         increaseRangeButton.Text = "Decrease Aimbot Range"
-        aimbotRangeIncreased = true
+    else
+        aimbotFOV = 150
+        increaseRangeButton.Text = "Increase Aimbot Range"
     end
 end)
 
