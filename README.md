@@ -1,588 +1,648 @@
--- Fixed Universal GUI script with restored tabs, options, and full GUI visibility
+-- Vex Hub - Universal Script
+-- Versão: 1.0
+-- Compatível com: Build A Boat For Treasure, Gunfight Arena e funções universais
+-- Adaptável para diferentes dispositivos
 
+local VexHub = {}
+
+-- Configurações iniciais
+VexHub.Settings = {
+    Universal = {
+        Fly = false,
+        FlySpeed = 1,
+        Noclip = false,
+        ESP = false,
+        ESPColor = Color3.fromRGB(0, 255, 0)
+    },
+    BuildABoat = {
+        AutoFarm = false,
+        FarmSpeed = 1
+    },
+    Gunfight = {
+        ESP = false,
+        TeamCheck = true,
+        Aimbot = false,
+        AimKey = Enum.UserInputType.MouseButton2,
+        AimPart = "Head",
+        FOV = 100,
+        Smoothness = 0.1,
+        IncreaseRange = false,
+        NewRange = 500
+    }
+}
+
+-- Serviços
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
-local StarterGui = game:GetService("StarterGui")
 
--- Responsive GUI size based on screen size
-local screenSize = workspace.CurrentCamera.ViewportSize
-local guiWidth = math.clamp(screenSize.X * 0.25, 300, 400)
-local guiHeight = math.clamp(screenSize.Y * 0.7, 400, 550)
-
--- Create ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UniversalGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
-
--- Main Frame (responsive size, draggable, positioned left)
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, guiWidth, 0, guiHeight)
-MainFrame.Position = UDim2.new(0, 10, 0.5, -guiHeight/2)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BackgroundTransparency = 0.05
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
-MainFrame.Active = true
-MainFrame.Draggable = true
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 20)
-UICorner.Parent = MainFrame
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(0, 255, 0)
-UIStroke.Thickness = 2
-UIStroke.Parent = MainFrame
-
--- Title Label
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 45)
-Title.BackgroundTransparency = 1
-Title.Text = "VEX Universal"
-Title.TextColor3 = Color3.fromRGB(0, 255, 0)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 28
-Title.Parent = MainFrame
-
--- Minimize button (small green V icon)
-local MinimizedButton = Instance.new("TextButton")
-MinimizedButton.Size = UDim2.new(0, 40, 0, 40)
-MinimizedButton.Position = UDim2.new(0, 10, 0, 10)
-MinimizedButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-MinimizedButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-MinimizedButton.Font = Enum.Font.GothamBold
-MinimizedButton.TextSize = 24
-MinimizedButton.Text = "V"
-MinimizedButton.Visible = false
-MinimizedButton.Parent = ScreenGui
-
-MinimizedButton.MouseButton1Click:Connect(function()
-    MinimizedButton.Visible = false
-    MainFrame.Visible = true
-end)
-
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -40, 0, 10)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-MinimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextSize = 20
-MinimizeButton.Text = "-"
-MinimizeButton.Parent = MainFrame
-
-MinimizeButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    MinimizedButton.Visible = true
-end)
-
--- Tab buttons container (vertical tabs on left)
-local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(0, 120, 1, -45)
-TabContainer.Position = UDim2.new(0, 0, 0, 45)
-TabContainer.BackgroundTransparency = 1
-TabContainer.Parent = MainFrame
-
-local function createTabButton(text, positionY)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.Position = UDim2.new(0, 0, 0, positionY)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
-    btn.Text = text
-    btn.AutoButtonColor = true
-    btn.Parent = TabContainer
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = btn
-
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        if btn.BackgroundColor3 ~= Color3.fromRGB(80, 80, 80) then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
-        end
-    end)
-
-    return btn
-end
-
-local UniversalTabButton = createTabButton("Universal", 0)
-local GunfightTabButton = createTabButton("Gunfight Arena", 50)
-
--- Content frames for tabs
-local UniversalTab = Instance.new("Frame")
-UniversalTab.Size = UDim2.new(1, -120, 1, -45)
-UniversalTab.Position = UDim2.new(0, 120, 0, 45)
-UniversalTab.BackgroundTransparency = 1
-UniversalTab.Parent = MainFrame
-
-local GunfightTab = Instance.new("Frame")
-GunfightTab.Size = UDim2.new(1, -120, 1, -45)
-GunfightTab.Position = UDim2.new(0, 120, 0, 45)
-GunfightTab.BackgroundTransparency = 1
-GunfightTab.Visible = false
-GunfightTab.Parent = MainFrame
-
--- Tab switching logic
-local function setActiveTab(tabButton, tabFrame)
-    UniversalTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    UniversalTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    GunfightTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    GunfightTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-
-    tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    UniversalTab.Visible = false
-    GunfightTab.Visible = false
-    tabFrame.Visible = true
-end
-
-UniversalTabButton.MouseButton1Click:Connect(function()
-    setActiveTab(UniversalTabButton, UniversalTab)
-end)
-
-GunfightTabButton.MouseButton1Click:Connect(function()
-    setActiveTab(GunfightTabButton, GunfightTab)
-end)
-
-setActiveTab(UniversalTabButton, UniversalTab)
-
--- ScrollFrames for each tab
-local UniversalScroll = Instance.new("ScrollingFrame")
-UniversalScroll.Size = UDim2.new(1, -20, 1, -20)
-UniversalScroll.Position = UDim2.new(0, 10, 0, 10)
-UniversalScroll.BackgroundTransparency = 1
-UniversalScroll.BorderSizePixel = 0
-UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-UniversalScroll.ScrollBarThickness = 6
-UniversalScroll.Parent = UniversalTab
-
-local GunfightScroll = Instance.new("ScrollingFrame")
-GunfightScroll.Size = UDim2.new(1, -20, 1, -20)
-GunfightScroll.Position = UDim2.new(0, 10, 0, 10)
-GunfightScroll.BackgroundTransparency = 1
-GunfightScroll.BorderSizePixel = 0
-GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-GunfightScroll.ScrollBarThickness = 6
-GunfightScroll.Parent = GunfightTab
-
-local UniversalLayout = Instance.new("UIListLayout")
-UniversalLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UniversalLayout.Padding = UDim.new(0, 10)
-UniversalLayout.Parent = UniversalScroll
-
-local GunfightLayout = Instance.new("UIListLayout")
-GunfightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-GunfightLayout.Padding = UDim.new(0, 10)
-GunfightLayout.Parent = GunfightScroll
-
-UniversalLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, UniversalLayout.AbsoluteContentSize.Y + 10)
-end)
-
-GunfightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, GunfightLayout.AbsoluteContentSize.Y + 10)
-end)
-
--- Utility function to create buttons inside a parent frame
-local function createButton(text, parent)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.TextColor3 = Color3.fromRGB(0, 255, 0)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 20
-    btn.Text = text
-    btn.AutoButtonColor = true
-    btn.Parent = parent
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = btn
-
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
-    end)
-
-    return btn
-end
-
--- Variables for features
-local flying = false
-local flySpeed = 50
-local bodyVelocity
-
-local invisible = false
-local espEnabled = false
-local espBoxes = {}
-
-local speedEnabled = false
-local defaultWalkSpeed = 16
-local speedValue = 50
-
-local jumpEnabled = false
-local defaultJumpPower = 50
-local jumpPowerValue = 100
-
-local autoHealEnabled = false
-local healAmount = 10
-local healInterval = 1
-
-local nightModeEnabled = false
-local defaultLightingSettings = {
-    Brightness = Lighting.Brightness,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
-    ClockTime = Lighting.ClockTime,
-}
-
-local nightLightingSettings = {
-    Brightness = 0.2,
-    Ambient = Color3.fromRGB(20, 20, 20),
-    OutdoorAmbient = Color3.fromRGB(10, 10, 10),
-    ClockTime = 0,
-}
-
-local antiAFKEnabled = false
-local VirtualUser = game:GetService("VirtualUser")
-
-local wallClipEnabled = false
-
-local aimbotFOV = 150 -- default aimbot range
-local aimbotRangeIncreased = false
-
--- Helper functions
-local function getCharacter()
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-end
-
-local function getRootPart()
-    local char = getCharacter()
-    return char and char:FindFirstChild("HumanoidRootPart")
-end
-
--- Fly feature (updated with your code)
-local function startFly()
-    if flying then return end
-    flying = true
-    local rootPart = getRootPart()
-    if not rootPart then return end
-
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    bodyVelocity.Velocity = Vector3.zero
-    bodyVelocity.Parent = rootPart
-
-    RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
-        local moveDirection = Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveDirection += Camera.CFrame.LookVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveDirection -= Camera.CFrame.LookVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveDirection -= Camera.CFrame.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveDirection += Camera.CFrame.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDirection += Vector3.new(0, 1, 0)
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDirection -= Vector3.new(0, 1, 0)
-        end
-
-        bodyVelocity.Velocity = moveDirection.Magnitude > 0 and moveDirection.Unit * flySpeed or Vector3.zero
-    end)
-end
-
-local function stopFly()
-    if not flying then return end
-    flying = false
-    RunService:UnbindFromRenderStep("Fly")
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-end
-
--- Wall clipping feature (updated with your code)
-local function toggleWallClip()
-    wallClipEnabled = not wallClipEnabled
-    local character = getCharacter()
-    if not character then return end
-
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not wallClipEnabled
-        end
-    end
-end
-
--- Invisibility feature
-local function toggleInvisibility()
-    invisible = not invisible
-    local character = getCharacter()
-    if not character then return end
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.Transparency = invisible and 1 or 0
-            if part:FindFirstChildOfClass("Decal") then
-                part:FindFirstChildOfClass("Decal").Transparency = invisible and 1 or 0
+-- Funções universais
+function VexHub:ToggleFly()
+    VexHub.Settings.Universal.Fly = not VexHub.Settings.Universal.Fly
+    
+    if VexHub.Settings.Universal.Fly then
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        bodyVelocity.Parent = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        local flyConnection
+        flyConnection = RunService.Heartbeat:Connect(function()
+            if not VexHub.Settings.Universal.Fly or not LocalPlayer.Character then
+                flyConnection:Disconnect()
+                return
             end
-        elseif part:IsA("Accessory") and part:FindFirstChild("Handle") then
-            part.Handle.Transparency = invisible and 1 or 0
-        end
+            
+            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local newVelocity = Vector3.new(0, 0, 0)
+                
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    newVelocity = newVelocity + (Camera.CFrame.LookVector * VexHub.Settings.Universal.FlySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    newVelocity = newVelocity - (Camera.CFrame.LookVector * VexHub.Settings.Universal.FlySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    newVelocity = newVelocity - (Camera.CFrame.RightVector * VexHub.Settings.Universal.FlySpeed)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    newVelocity = newVelocity + (Camera.CFrame.RightVector * VexHub.Settings.Universal.FlySpeed)
+                end
+                
+                rootPart.Velocity = Vector3.new(newVelocity.X, 0, newVelocity.Z)
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    bodyVelocity.Velocity = Vector3.new(0, VexHub.Settings.Universal.FlySpeed * 20, 0)
+                elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    bodyVelocity.Velocity = Vector3.new(0, -VexHub.Settings.Universal.FlySpeed * 20, 0)
+                end
+            end
+        end)
     end
 end
 
--- ESP feature (updated with your code)
-local function toggleESP()
-    espEnabled = not espEnabled
-    if espEnabled then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local box = Instance.new("BoxHandleAdornment")
-                box.Adornee = player.Character.HumanoidRootPart
-                box.AlwaysOnTop = true
-                box.ZIndex = 10
-                box.Size = Vector3.new(4, 6, 1)
-                box.Color3 = Color3.fromRGB(255, 0, 0)
-                box.Transparency = 0.5
-                box.Parent = Camera
-                espBoxes[player] = box
+function VexHub:ToggleNoclip()
+    VexHub.Settings.Universal.Noclip = not VexHub.Settings.Universal.Noclip
+    
+    if VexHub.Settings.Universal.Noclip then
+        local noclipConnection
+        noclipConnection = RunService.Stepped:Connect(function()
+            if not VexHub.Settings.Universal.Noclip or not LocalPlayer.Character then
+                noclipConnection:Disconnect()
+                return
+            end
+            
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end)
+    end
+end
+
+function VexHub:ToggleESP()
+    VexHub.Settings.Universal.ESP = not VexHub.Settings.Universal.ESP
+    
+    if not VexHub.Settings.Universal.ESP then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local highlight = player.Character:FindFirstChild("VexESP")
+                if highlight then
+                    highlight:Destroy()
+                end
             end
         end
-    else
-        for _, box in pairs(espBoxes) do
-            box:Destroy()
+        return
+    end
+    
+    local function createESP(player)
+        if player == LocalPlayer then return end
+        
+        local character = player.Character or player.CharacterAdded:Wait()
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "VexESP"
+        highlight.FillColor = VexHub.Settings.Universal.ESPColor
+        highlight.OutlineColor = VexHub.Settings.Universal.ESPColor
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if player.Character then
+                createESP(player)
+            end
+            player.CharacterAdded:Connect(function(character)
+                createESP(player)
+            end)
         end
-        espBoxes = {}
+    end
+    
+    Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function(character)
+            createESP(player)
+        end)
+    end)
+end
+
+-- Funções específicas para Build A Boat For Treasure
+function VexHub:ToggleBABAutoFarm()
+    if game.PlaceId ~= 537413528 then
+        warn("Este recurso só está disponível em Build A Boat For Treasure")
+        return
+    end
+    
+    VexHub.Settings.BuildABoat.AutoFarm = not VexHub.Settings.BuildABoat.AutoFarm
+    
+    if VexHub.Settings.BuildABoat.AutoFarm then
+        local farmConnection
+        farmConnection = RunService.Heartbeat:Connect(function()
+            if not VexHub.Settings.BuildABoat.AutoFarm or not LocalPlayer.Character then
+                farmConnection:Disconnect()
+                return
+            end
+            
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and rootPart then
+                -- Simples autofarm que move o jogador para frente continuamente
+                rootPart.CFrame = rootPart.CFrame + (rootPart.CFrame.LookVector * VexHub.Settings.BuildABoat.FarmSpeed * 0.1)
+            end
+        end)
     end
 end
 
--- Hitbox expander (adjusted if needed)
-local function createESPBox(player)
-    local box = Instance.new("BoxHandleAdornment")
-    box.Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    box.AlwaysOnTop = true
-    box.ZIndex = 10
-    box.Size = Vector3.new(4, 6, 1)
-    box.Color3 = Color3.new(1, 0, 0)
-    box.Transparency = 0.5
-    box.Parent = Camera
-    return box
+-- Funções específicas para Gunfight Arena
+function VexHub:ToggleGunfightESP()
+    if game.PlaceId ~= 14518422161 then
+        warn("Este recurso só está disponível em Gunfight Arena")
+        return
+    end
+    
+    VexHub.Settings.Gunfight.ESP = not VexHub.Settings.Gunfight.ESP
+    
+    if not VexHub.Settings.Gunfight.ESP then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local highlight = player.Character:FindFirstChild("VexGunfightESP")
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+        return
+    end
+    
+    local function createGunfightESP(player)
+        if player == LocalPlayer then return end
+        
+        local character = player.Character or player.CharacterAdded:Wait()
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "VexGunfightESP"
+        
+        -- Verificação de time se ativada
+        if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
+            highlight.FillColor = Color3.fromRGB(0, 0, 255) -- Azul para aliados
+        else
+            highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Vermelho para inimigos
+        end
+        
+        highlight.OutlineColor = highlight.FillColor
+        highlight.FillTransparency = 0.3
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if player.Character then
+                createGunfightESP(player)
+            end
+            player.CharacterAdded:Connect(function(character)
+                createGunfightESP(player)
+            end)
+        end
+    end
+    
+    Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function(character)
+            createGunfightESP(player)
+        end)
+    end)
 end
 
--- Team check feature
-local teamCheckEnabled = false
-local function isEnemy(player)
-    if not teamCheckEnabled then
-        return true
+function VexHub:ToggleAimbot()
+    if game.PlaceId ~= 14518422161 then
+        warn("Este recurso só está disponível em Gunfight Arena")
+        return
     end
-    local localTeam = LocalPlayer.Team
-    if not localTeam then
-        return true
+    
+    VexHub.Settings.Gunfight.Aimbot = not VexHub.Settings.Gunfight.Aimbot
+    
+    if VexHub.Settings.Gunfight.Aimbot then
+        local aimbotConnection
+        aimbotConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            
+            if input.UserInputType == VexHub.Settings.Gunfight.AimKey then
+                local closestPlayer, closestDistance = nil, math.huge
+                local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                
+                if not localRoot then return end
+                
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local character = player.Character
+                        local humanoid = character:FindFirstChildOfClass("Humanoid")
+                        local rootPart = character:FindFirstChild("HumanoidRootPart")
+                        local head = character:FindFirstChild("Head")
+                        
+                        if humanoid and humanoid.Health > 0 and rootPart and head then
+                            -- Verificação de time se ativada
+                            if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
+                                continue
+                            end
+                            
+                            local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
+                            local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+                            local magnitude = distance.Magnitude
+                            
+                            if onScreen and magnitude < VexHub.Settings.Gunfight.FOV and magnitude < closestDistance then
+                                closestDistance = magnitude
+                                closestPlayer = player
+                            end
+                        end
+                    end
+                end
+                
+                if closestPlayer then
+                    local targetPart = closestPlayer.Character:FindFirstChild(VexHub.Settings.Gunfight.AimPart) or closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if targetPart then
+                        local aimPosition = targetPart.Position
+                        if VexHub.Settings.Gunfight.Smoothness > 0 then
+                            local currentLook = Camera.CFrame.LookVector
+                            local targetLook = (aimPosition - Camera.CFrame.Position).Unit
+                            local smoothedLook = currentLook:Lerp(targetLook, VexHub.Settings.Gunfight.Smoothness)
+                            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + smoothedLook)
+                        else
+                            Camera.CFrame = CFrame.new(Camera.CFrame.Position, aimPosition)
+                        end
+                    end
+                end
+            end
+        end)
     end
-    return player.Team ~= localTeam
 end
 
--- Aimbot feature (updated with your code and range option)
-local aimbotEnabled = false
-local aimbotSmoothness = 0.25
-local aimbotFOV = 150 -- default aimbot range
-
-local function getClosestEnemy()
-    local closestPlayer, shortestDistance = nil, math.huge
-    local cameraPosition = Camera.CFrame.Position
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and isEnemy(player) then
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-
-            if onScreen then
-                local direction = (rootPart.Position - cameraPosition).Unit
-                local ray = Ray.new(cameraPosition, direction * aimbotFOV)
-                local hitPart = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
-
-                if hitPart == rootPart then
-                    local distance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                    if distance < shortestDistance then
-                        shortestDistance = distance
-                        closestPlayer = player
+function VexHub:IncreaseGunRange()
+    if game.PlaceId ~= 14518422161 then
+        warn("Este recurso só está disponível em Gunfight Arena")
+        return
+    end
+    
+    VexHub.Settings.Gunfight.IncreaseRange = not VexHub.Settings.Gunfight.IncreaseRange
+    
+    if VexHub.Settings.Gunfight.IncreaseRange then
+        -- Esta é uma abordagem genérica, a implementação real depende de como o jogo funciona
+        for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, v in pairs(tool:GetDescendants()) do
+                    if v:IsA("NumberValue") and (v.Name:lower():find("range") or v.Name:lower():find("distance")) then
+                        v.Value = VexHub.Settings.Gunfight.NewRange
                     end
                 end
             end
         end
+        
+        LocalPlayer.CharacterAdded:Connect(function(character)
+            character.ChildAdded:Connect(function(tool)
+                if tool:IsA("Tool") then
+                    for _, v in pairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") and (v.Name:lower():find("range") or v.Name:lower():find("distance")) then
+                            v.Value = VexHub.Settings.Gunfight.NewRange
+                        end
+                    end
+                end
+            end)
+        end)
+    else
+        -- Resetar para os valores padrão (seria necessário armazenar os valores originais)
+        -- Implementação omitida por simplicidade
     end
-    return closestPlayer
 end
 
-RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, function()
-    if aimbotEnabled then
-        local target = getClosestEnemy()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = target.Character.HumanoidRootPart.Position
-            local cameraCFrame = Camera.CFrame
-            local direction = (targetPos - cameraCFrame.Position).Unit
-            local newCFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + direction)
-            Camera.CFrame = cameraCFrame:Lerp(newCFrame, aimbotSmoothness)
+-- Interface do usuário
+function VexHub:CreateUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "VexHubUI"
+    ScreenGui.Parent = game.CoreGui
+    
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 350, 0, 400)
+    MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+    
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Text = "Vex Hub"
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.Position = UDim2.new(0, 0, 0, 0)
+    Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 18
+    Title.Parent = MainFrame
+    
+    local TabButtons = Instance.new("Frame")
+    TabButtons.Name = "TabButtons"
+    TabButtons.Size = UDim2.new(1, 0, 0, 30)
+    TabButtons.Position = UDim2.new(0, 0, 0, 40)
+    TabButtons.BackgroundTransparency = 1
+    TabButtons.Parent = MainFrame
+    
+    local UniversalTab = Instance.new("TextButton")
+    UniversalTab.Name = "UniversalTab"
+    UniversalTab.Text = "Universal"
+    UniversalTab.Size = UDim2.new(0.33, 0, 1, 0)
+    UniversalTab.Position = UDim2.new(0, 0, 0, 0)
+    UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    UniversalTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    UniversalTab.Font = Enum.Font.Gotham
+    UniversalTab.TextSize = 14
+    UniversalTab.Parent = TabButtons
+    
+    local BABTab = Instance.new("TextButton")
+    BABTab.Name = "BABTab"
+    BABTab.Text = "Build A Boat"
+    BABTab.Size = UDim2.new(0.34, 0, 1, 0)
+    BABTab.Position = UDim2.new(0.33, 0, 0, 0)
+    BABTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BABTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BABTab.Font = Enum.Font.Gotham
+    BABTab.TextSize = 14
+    BABTab.Parent = TabButtons
+    
+    local GunfightTab = Instance.new("TextButton")
+    GunfightTab.Name = "GunfightTab"
+    GunfightTab.Text = "Gunfight"
+    GunfightTab.Size = UDim2.new(0.33, 0, 1, 0)
+    GunfightTab.Position = UDim2.new(0.67, 0, 0, 0)
+    GunfightTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    GunfightTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GunfightTab.Font = Enum.Font.Gotham
+    GunfightTab.TextSize = 14
+    GunfightTab.Parent = TabButtons
+    
+    local TabContent = Instance.new("Frame")
+    TabContent.Name = "TabContent"
+    TabContent.Size = UDim2.new(1, 0, 1, -70)
+    TabContent.Position = UDim2.new(0, 0, 0, 70)
+    TabContent.BackgroundTransparency = 1
+    TabContent.Parent = MainFrame
+    
+    -- Conteúdo da aba Universal
+    local UniversalContent = Instance.new("ScrollingFrame")
+    UniversalContent.Name = "UniversalContent"
+    UniversalContent.Size = UDim2.new(1, 0, 1, 0)
+    UniversalContent.Position = UDim2.new(0, 0, 0, 0)
+    UniversalContent.BackgroundTransparency = 1
+    UniversalContent.ScrollBarThickness = 5
+    UniversalContent.Visible = true
+    UniversalContent.Parent = TabContent
+    
+    local FlyToggle = Instance.new("TextButton")
+    FlyToggle.Name = "FlyToggle"
+    FlyToggle.Text = "Fly: OFF"
+    FlyToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    FlyToggle.Position = UDim2.new(0.05, 0, 0, 10)
+    FlyToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    FlyToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FlyToggle.Font = Enum.Font.Gotham
+    FlyToggle.TextSize = 14
+    FlyToggle.Parent = UniversalContent
+    
+    local NoclipToggle = Instance.new("TextButton")
+    NoclipToggle.Name = "NoclipToggle"
+    NoclipToggle.Text = "Noclip: OFF"
+    NoclipToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    NoclipToggle.Position = UDim2.new(0.05, 0, 0, 60)
+    NoclipToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    NoclipToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NoclipToggle.Font = Enum.Font.Gotham
+    NoclipToggle.TextSize = 14
+    NoclipToggle.Parent = UniversalContent
+    
+    local ESPToggle = Instance.new("TextButton")
+    ESPToggle.Name = "ESPToggle"
+    ESPToggle.Text = "ESP: OFF"
+    ESPToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    ESPToggle.Position = UDim2.new(0.05, 0, 0, 110)
+    ESPToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    ESPToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPToggle.Font = Enum.Font.Gotham
+    ESPToggle.TextSize = 14
+    ESPToggle.Parent = UniversalContent
+    
+    -- Conteúdo da aba Build A Boat
+    local BABContent = Instance.new("ScrollingFrame")
+    BABContent.Name = "BABContent"
+    BABContent.Size = UDim2.new(1, 0, 1, 0)
+    BABContent.Position = UDim2.new(0, 0, 0, 0)
+    BABContent.BackgroundTransparency = 1
+    BABContent.ScrollBarThickness = 5
+    BABContent.Visible = false
+    BABContent.Parent = TabContent
+    
+    local AutoFarmToggle = Instance.new("TextButton")
+    AutoFarmToggle.Name = "AutoFarmToggle"
+    AutoFarmToggle.Text = "Auto Farm: OFF"
+    AutoFarmToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    AutoFarmToggle.Position = UDim2.new(0.05, 0, 0, 10)
+    AutoFarmToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    AutoFarmToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AutoFarmToggle.Font = Enum.Font.Gotham
+    AutoFarmToggle.TextSize = 14
+    AutoFarmToggle.Parent = BABContent
+    
+    -- Conteúdo da aba Gunfight
+    local GunfightContent = Instance.new("ScrollingFrame")
+    GunfightContent.Name = "GunfightContent"
+    GunfightContent.Size = UDim2.new(1, 0, 1, 0)
+    GunfightContent.Position = UDim2.new(0, 0, 0, 0)
+    GunfightContent.BackgroundTransparency = 1
+    GunfightContent.ScrollBarThickness = 5
+    GunfightContent.Visible = false
+    GunfightContent.Parent = TabContent
+    
+    local GunfightESPToggle = Instance.new("TextButton")
+    GunfightESPToggle.Name = "GunfightESPToggle"
+    GunfightESPToggle.Text = "ESP: OFF"
+    GunfightESPToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    GunfightESPToggle.Position = UDim2.new(0.05, 0, 0, 10)
+    GunfightESPToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    GunfightESPToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GunfightESPToggle.Font = Enum.Font.Gotham
+    GunfightESPToggle.TextSize = 14
+    GunfightESPToggle.Parent = GunfightContent
+    
+    local TeamCheckToggle = Instance.new("TextButton")
+    TeamCheckToggle.Name = "TeamCheckToggle"
+    TeamCheckToggle.Text = "Team Check: ON"
+    TeamCheckToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    TeamCheckToggle.Position = UDim2.new(0.05, 0, 0, 60)
+    TeamCheckToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    TeamCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeamCheckToggle.Font = Enum.Font.Gotham
+    TeamCheckToggle.TextSize = 14
+    TeamCheckToggle.Parent = GunfightContent
+    
+    local AimbotToggle = Instance.new("TextButton")
+    AimbotToggle.Name = "AimbotToggle"
+    AimbotToggle.Text = "Aimbot: OFF"
+    AimbotToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    AimbotToggle.Position = UDim2.new(0.05, 0, 0, 110)
+    AimbotToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    AimbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimbotToggle.Font = Enum.Font.Gotham
+    AimbotToggle.TextSize = 14
+    AimbotToggle.Parent = GunfightContent
+    
+    local IncreaseRangeToggle = Instance.new("TextButton")
+    IncreaseRangeToggle.Name = "IncreaseRangeToggle"
+    IncreaseRangeToggle.Text = "Increase Range: OFF"
+    IncreaseRangeToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    IncreaseRangeToggle.Position = UDim2.new(0.05, 0, 0, 160)
+    IncreaseRangeToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    IncreaseRangeToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    IncreaseRangeToggle.Font = Enum.Font.Gotham
+    IncreaseRangeToggle.TextSize = 14
+    IncreaseRangeToggle.Parent = GunfightContent
+    
+    -- Conectando os botões
+    FlyToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleFly()
+        FlyToggle.Text = "Fly: " .. (VexHub.Settings.Universal.Fly and "ON" or "OFF")
+    end)
+    
+    NoclipToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleNoclip()
+        NoclipToggle.Text = "Noclip: " .. (VexHub.Settings.Universal.Noclip and "ON" or "OFF")
+    end)
+    
+    ESPToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleESP()
+        ESPToggle.Text = "ESP: " .. (VexHub.Settings.Universal.ESP and "ON" or "OFF")
+    end)
+    
+    AutoFarmToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleBABAutoFarm()
+        AutoFarmToggle.Text = "Auto Farm: " .. (VexHub.Settings.BuildABoat.AutoFarm and "ON" or "OFF")
+    end)
+    
+    GunfightESPToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleGunfightESP()
+        GunfightESPToggle.Text = "ESP: " .. (VexHub.Settings.Gunfight.ESP and "ON" or "OFF")
+    end)
+    
+    TeamCheckToggle.MouseButton1Click:Connect(function()
+        VexHub.Settings.Gunfight.TeamCheck = not VexHub.Settings.Gunfight.TeamCheck
+        TeamCheckToggle.Text = "Team Check: " .. (VexHub.Settings.Gunfight.TeamCheck and "ON" or "OFF")
+    end)
+    
+    AimbotToggle.MouseButton1Click:Connect(function()
+        VexHub:ToggleAimbot()
+        AimbotToggle.Text = "Aimbot: " .. (VexHub.Settings.Gunfight.Aimbot and "ON" or "OFF")
+    end)
+    
+    IncreaseRangeToggle.MouseButton1Click:Connect(function()
+        VexHub:IncreaseGunRange()
+        IncreaseRangeToggle.Text = "Increase Range: " .. (VexHub.Settings.Gunfight.IncreaseRange and "ON" or "OFF")
+    end)
+    
+    -- Lógica de troca de abas
+    UniversalTab.MouseButton1Click:Connect(function()
+        UniversalContent.Visible = true
+        BABContent.Visible = false
+        GunfightContent.Visible = false
+        
+        UniversalTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        BABTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        GunfightTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end)
+    
+    BABTab.MouseButton1Click:Connect(function()
+        UniversalContent.Visible = false
+        BABContent.Visible = true
+        GunfightContent.Visible = false
+        
+        UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        BABTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        GunfightTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end)
+    
+    GunfightTab.MouseButton1Click:Connect(function()
+        UniversalContent.Visible = false
+        BABContent.Visible = false
+        GunfightContent.Visible = true
+        
+        UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        BABTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        GunfightTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end)
+    
+    -- Tornar a janela arrastável
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+    
+    local function update(input)
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    
+    Title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
-    end
-end)
+    end)
+    
+    Title.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
 
--- Create buttons for Universal tab
-local flyButton = createButton("Toggle Fly", UniversalScroll)
-local invisButton = createButton("Toggle Invisibility", UniversalScroll)
-local espButton = createButton("Toggle ESP", UniversalScroll)
-local speedButton = createButton("Toggle Speed", UniversalScroll)
-local jumpButton = createButton("Toggle Jump Boost", UniversalScroll)
-local teleportButton = createButton("Teleport to Spawn", UniversalScroll)
-local autoHealButton = createButton("Toggle Auto Heal", UniversalScroll)
-local nightModeButton = createButton("Toggle Night Mode", UniversalScroll)
-local antiAFKButton = createButton("Toggle Anti-AFK", UniversalScroll)
-local wallClipButton = createButton("Toggle Wall Clip", UniversalScroll)
+-- Inicialização
+if not _G.VexHubInitialized then
+    _G.VexHubInitialized = true
+    VexHub:CreateUI()
+end
 
--- Create buttons for Gunfight Arena tab
-local teamCheckButton = createButton("Toggle Team Check", GunfightScroll)
-local aimbotButton = createButton("Toggle Aimbot", GunfightScroll)
-local increaseRangeButton = createButton("Increase Aimbot Range", GunfightScroll)
-
--- Button connections
-flyButton.MouseButton1Click:Connect(function()
-    if flying then
-        stopFly()
-        flyButton.Text = "Toggle Fly"
-    else
-        startFly()
-        flyButton.Text = "Disable Fly"
-    end
-end)
-
-invisButton.MouseButton1Click:Connect(function()
-    toggleInvisibility()
-    if invisible then
-        invisButton.Text = "Disable Invisibility"
-    else
-        invisButton.Text = "Toggle Invisibility"
-    end
-end)
-
-espButton.MouseButton1Click:Connect(function()
-    toggleESP()
-    if espEnabled then
-        espButton.Text = "Disable ESP"
-    else
-        espButton.Text = "Toggle ESP"
-    end
-end)
-
-speedButton.MouseButton1Click:Connect(function()
-    toggleSpeed()
-    if speedEnabled then
-        speedButton.Text = "Disable Speed"
-    else
-        speedButton.Text = "Toggle Speed"
-    end
-end)
-
-jumpButton.MouseButton1Click:Connect(function()
-    toggleJump()
-    if jumpEnabled then
-        jumpButton.Text = "Disable Jump Boost"
-    else
-        jumpButton.Text = "Toggle Jump Boost"
-    end
-end)
-
-teleportButton.MouseButton1Click:Connect(function()
-    teleportToSpawn()
-end)
-
-autoHealButton.MouseButton1Click:Connect(function()
-    toggleAutoHeal()
-    if autoHealEnabled then
-        autoHealButton.Text = "Disable Auto Heal"
-    else
-        autoHealButton.Text = "Toggle Auto Heal"
-    end
-end)
-
-nightModeButton.MouseButton1Click:Connect(function()
-    toggleNightMode()
-    if nightModeEnabled then
-        nightModeButton.Text = "Disable Night Mode"
-    else
-        nightModeButton.Text = "Toggle Night Mode"
-    end
-end)
-
-antiAFKButton.MouseButton1Click:Connect(function()
-    toggleAntiAFK()
-    if antiAFKEnabled then
-        antiAFKButton.Text = "Disable Anti-AFK"
-    else
-        antiAFKButton.Text = "Toggle Anti-AFK"
-    end
-end)
-
-wallClipButton.MouseButton1Click:Connect(function()
-    toggleWallClip()
-    if wallClipEnabled then
-        wallClipButton.Text = "Disable Wall Clip"
-    else
-        wallClipButton.Text = "Toggle Wall Clip"
-    end
-end)
-
-teamCheckButton.MouseButton1Click:Connect(function()
-    teamCheckEnabled = not teamCheckEnabled
-    if teamCheckEnabled then
-        teamCheckButton.Text = "Disable Team Check"
-    else
-        teamCheckButton.Text = "Enable Team Check"
-    end
-end)
-
-aimbotButton.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled
-    if aimbotEnabled then
-        aimbotButton.Text = "Disable Aimbot"
-    else
-        aimbotButton.Text = "Enable Aimbot"
-    end
-end)
-
-increaseRangeButton.MouseButton1Click:Connect(function()
-    if aimbotFOV == 150 then
-        aimbotFOV = 300
-        increaseRangeButton.Text = "Decrease Aimbot Range"
-    else
-        aimbotFOV = 150
-        increaseRangeButton.Text = "Increase Aimbot Range"
-    end
-end)
-
--- Anti-detection note:
--- This script uses minimal events and simple methods to reduce detection risk.
--- However, no script can guarantee full undetectability on Roblox.
--- Use with caution and at your own risk.
+return VexHub
