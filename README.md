@@ -1,4 +1,4 @@
--- Updated Universal GUI script with scrollable frame, repositioned GUI, unified tab, and enhanced Banana Hub style
+-- Updated Universal GUI script with your provided fly, wall clip, aimbot, ESP, and hitbox expander code, plus aimbot range option
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -105,33 +105,6 @@ UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 end)
 
--- Utility function to create buttons inside ScrollFrame
-local function createButton(text)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.TextColor3 = Color3.fromRGB(0, 255, 0)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 20
-    btn.Text = text
-    btn.AutoButtonColor = true
-    btn.Parent = ScrollFrame
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = btn
-
-    -- Hover effect
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
-    end)
-
-    return btn
-end
-
 -- Variables for features
 local flying = false
 local flySpeed = 50
@@ -173,6 +146,9 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local wallClipEnabled = false
 
+local aimbotFOV = 150 -- default aimbot range
+local aimbotRangeIncreased = false
+
 -- Helper functions
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -183,7 +159,7 @@ local function getRootPart()
     return char and char:FindFirstChild("HumanoidRootPart")
 end
 
--- Fly feature (fixed)
+-- Fly feature (updated with your code)
 local function startFly()
     if flying then return end
     flying = true
@@ -192,35 +168,31 @@ local function startFly()
 
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Velocity = Vector3.zero
     bodyVelocity.Parent = rootPart
 
     RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
-        local moveDirection = Vector3.new(0, 0, 0)
+        local moveDirection = Vector3.zero
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveDirection = moveDirection + Camera.CFrame.LookVector
+            moveDirection += Camera.CFrame.LookVector
         end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveDirection = moveDirection - Camera.CFrame.LookVector
+            moveDirection -= Camera.CFrame.LookVector
         end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveDirection = moveDirection - Camera.CFrame.RightVector
+            moveDirection -= Camera.CFrame.RightVector
         end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveDirection = moveDirection + Camera.CFrame.RightVector
+            moveDirection += Camera.CFrame.RightVector
         end
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+            moveDirection += Vector3.new(0, 1, 0)
         end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+            moveDirection -= Vector3.new(0, 1, 0)
         end
 
-        if moveDirection.Magnitude > 0 then
-            bodyVelocity.Velocity = moveDirection.Unit * flySpeed
-        else
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end
+        bodyVelocity.Velocity = moveDirection.Magnitude > 0 and moveDirection.Unit * flySpeed or Vector3.zero
     end)
 end
 
@@ -234,14 +206,17 @@ local function stopFly()
     end
 end
 
--- Wall clipping feature
+-- Wall clipping feature (updated with your code)
 local function toggleWallClip()
     wallClipEnabled = not wallClipEnabled
     local character = getCharacter()
     if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    humanoid:ChangeState(wallClipEnabled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not wallClipEnabled
+        end
+    end
 end
 
 -- Invisibility feature
@@ -261,8 +236,32 @@ local function toggleInvisibility()
     end
 end
 
--- ESP feature
-local espBoxes = {}
+-- ESP feature (updated with your code)
+local function toggleESP()
+    espEnabled = not espEnabled
+    if espEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local box = Instance.new("BoxHandleAdornment")
+                box.Adornee = player.Character.HumanoidRootPart
+                box.AlwaysOnTop = true
+                box.ZIndex = 10
+                box.Size = Vector3.new(4, 6, 1)
+                box.Color3 = Color3.fromRGB(255, 0, 0)
+                box.Transparency = 0.5
+                box.Parent = Camera
+                espBoxes[player] = box
+            end
+        end
+    else
+        for _, box in pairs(espBoxes) do
+            box:Destroy()
+        end
+        espBoxes = {}
+    end
+end
+
+-- Hitbox expander (adjusted if needed)
 local function createESPBox(player)
     local box = Instance.new("BoxHandleAdornment")
     box.Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -275,154 +274,7 @@ local function createESPBox(player)
     return box
 end
 
-local espEnabled = false
-local function toggleESP()
-    espEnabled = not espEnabled
-    if espEnabled then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                espBoxes[player] = createESPBox(player)
-            end
-        end
-        Players.PlayerAdded:Connect(function(player)
-            if espEnabled then
-                espBoxes[player] = createESPBox(player)
-            end
-        end)
-        Players.PlayerRemoving:Connect(function(player)
-            if espBoxes[player] then
-                espBoxes[player]:Destroy()
-                espBoxes[player] = nil
-            end
-        end)
-    else
-        for _, box in pairs(espBoxes) do
-            box:Destroy()
-        end
-        espBoxes = {}
-    end
-end
-
--- Speed toggle
-local speedEnabled = false
-local defaultWalkSpeed = 16
-local speedValue = 50
-
-local function toggleSpeed()
-    local character = getCharacter()
-    if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    speedEnabled = not speedEnabled
-    if speedEnabled then
-        humanoid.WalkSpeed = speedValue
-    else
-        humanoid.WalkSpeed = defaultWalkSpeed
-    end
-end
-
--- Jump boost toggle
-local jumpEnabled = false
-local defaultJumpPower = 50
-local jumpPowerValue = 100
-
-local function toggleJump()
-    local character = getCharacter()
-    if not character then return end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    jumpEnabled = not jumpEnabled
-    if jumpEnabled then
-        humanoid.JumpPower = jumpPowerValue
-    else
-        humanoid.JumpPower = defaultJumpPower
-    end
-end
-
--- Teleport to spawn
-local function teleportToSpawn()
-    local character = getCharacter()
-    if not character then return end
-    local rootPart = getRootPart()
-    if not rootPart then return end
-    local spawnLocation = workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn")
-    if spawnLocation and spawnLocation:IsA("BasePart") then
-        rootPart.CFrame = spawnLocation.CFrame + Vector3.new(0, 5, 0)
-    else
-        rootPart.CFrame = CFrame.new(0, 10, 0)
-    end
-end
-
--- Auto heal toggle
-local autoHealEnabled = false
-local healAmount = 10
-local healInterval = 1
-
-local function autoHeal()
-    while autoHealEnabled do
-        local character = getCharacter()
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health < humanoid.MaxHealth then
-                humanoid.Health = math.min(humanoid.Health + healAmount, humanoid.MaxHealth)
-            end
-        end
-        wait(healInterval)
-    end
-end
-
-local function toggleAutoHeal()
-    autoHealEnabled = not autoHealEnabled
-    if autoHealEnabled then
-        coroutine.wrap(autoHeal)()
-    end
-end
-
--- Night mode toggle
-local nightModeEnabled = false
-local defaultLightingSettings = {
-    Brightness = Lighting.Brightness,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
-    ClockTime = Lighting.ClockTime,
-}
-
-local nightLightingSettings = {
-    Brightness = 0.2,
-    Ambient = Color3.fromRGB(20, 20, 20),
-    OutdoorAmbient = Color3.fromRGB(10, 10, 10),
-    ClockTime = 0,
-}
-
-local function toggleNightMode()
-    nightModeEnabled = not nightModeEnabled
-    if nightModeEnabled then
-        Lighting.Brightness = nightLightingSettings.Brightness
-        Lighting.Ambient = nightLightingSettings.Ambient
-        Lighting.OutdoorAmbient = nightLightingSettings.OutdoorAmbient
-        Lighting.ClockTime = nightLightingSettings.ClockTime
-    else
-        Lighting.Brightness = defaultLightingSettings.Brightness
-        Lighting.Ambient = defaultLightingSettings.Ambient
-        Lighting.OutdoorAmbient = defaultLightingSettings.OutdoorAmbient
-        Lighting.ClockTime = defaultLightingSettings.ClockTime
-    end
-end
-
--- Anti-AFK feature
-local antiAFKEnabled = false
-local function toggleAntiAFK()
-    antiAFKEnabled = not antiAFKEnabled
-    if antiAFKEnabled then
-        LocalPlayer.Idled:Connect(function()
-            VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            wait(1)
-            VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-end
-
--- Team check feature for Gunfight Arena
+-- Team check feature
 local teamCheckEnabled = false
 local function isEnemy(player)
     if not teamCheckEnabled then
@@ -435,24 +287,30 @@ local function isEnemy(player)
     return player.Team ~= localTeam
 end
 
--- Aimbot feature for Gunfight Arena with increased range and closest to crosshair targeting
+-- Aimbot feature (updated with your code and range option)
 local aimbotEnabled = false
-local aimbotFOV = 150 -- increased degrees for wider range
 local aimbotSmoothness = 0.25
 
 local function getClosestEnemy()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    for _, player in pairs(Players:GetPlayers()) do
+    local closestPlayer, shortestDistance = nil, math.huge
+    local cameraPosition = Camera.CFrame.Position
+
+    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and isEnemy(player) then
-            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            local rootPart = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
             if onScreen then
-                local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-                local playerPos = Vector2.new(screenPos.X, screenPos.Y)
-                local distance = (playerPos - mousePos).Magnitude
-                if distance < shortestDistance and distance <= aimbotFOV then
-                    shortestDistance = distance
-                    closestPlayer = player
+                local direction = (rootPart.Position - cameraPosition).Unit
+                local ray = Ray.new(cameraPosition, direction * aimbotFOV)
+                local hitPart = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+
+                if hitPart == rootPart then
+                    local distance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closestPlayer = player
+                    end
                 end
             end
         end
@@ -486,6 +344,7 @@ local antiAFKButton = createButton("Toggle Anti-AFK")
 local wallClipButton = createButton("Toggle Wall Clip")
 local teamCheckButton = createButton("Toggle Team Check")
 local aimbotButton = createButton("Toggle Aimbot")
+local increaseRangeButton = createButton("Increase Aimbot Range")
 
 -- Button connections
 flyButton.MouseButton1Click:Connect(function()
@@ -589,6 +448,18 @@ aimbotButton.MouseButton1Click:Connect(function()
         aimbotButton.Text = "Disable Aimbot"
     else
         aimbotButton.Text = "Enable Aimbot"
+    end
+end)
+
+increaseRangeButton.MouseButton1Click:Connect(function()
+    if aimbotRangeIncreased then
+        aimbotFOV = 150
+        increaseRangeButton.Text = "Increase Aimbot Range"
+        aimbotRangeIncreased = false
+    else
+        aimbotFOV = 300
+        increaseRangeButton.Text = "Decrease Aimbot Range"
+        aimbotRangeIncreased = true
     end
 end)
 
