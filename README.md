@@ -37,6 +37,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
 
 -- Conexões
 VexHub.Connections = {}
@@ -192,38 +193,6 @@ function VexHub:CreateUI()
     GunfightTab.BackgroundTransparency = 1
     GunfightTab.Visible = false
     GunfightTab.Parent = MainFrame
-
-    -- Tab switching logic
-    local function setActiveTab(tabButton, tabFrame)
-        UniversalTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        UniversalTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-        BuildABoatTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        BuildABoatTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-        GunfightTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        GunfightTabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-
-        tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-        UniversalTab.Visible = false
-        BuildABoatTab.Visible = false
-        GunfightTab.Visible = false
-        tabFrame.Visible = true
-    end
-
-    UniversalTabButton.MouseButton1Click:Connect(function()
-        setActiveTab(UniversalTabButton, UniversalTab)
-    end)
-
-    BuildABoatTabButton.MouseButton1Click:Connect(function()
-        setActiveTab(BuildABoatTabButton, BuildABoatTab)
-    end)
-
-    GunfightTabButton.MouseButton1Click:Connect(function()
-        setActiveTab(GunfightTabButton, GunfightTab)
-    end)
-
-    setActiveTab(UniversalTabButton, UniversalTab)
 
     -- ScrollFrames for each tab
     local UniversalScroll = Instance.new("ScrollingFrame")
