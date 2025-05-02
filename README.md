@@ -1,6 +1,7 @@
 -- Vex Hub - Universal Script
 -- Versão: 2.0
 -- GUI redesign inspired by Banana Hub style with tabs, minimize/maximize, and mobile/PC responsiveness
+-- Fly feature updated based on user-provided script (without GUI)
 
 local VexHub = {}
 
@@ -56,6 +57,94 @@ function VexHub:Cleanup()
             if esp then esp:Destroy() end
         end
     end
+end
+
+-- Fly feature variables
+local flying = false
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+local maxspeed = 50
+local speed = 0
+local bg
+local bv
+
+local function getCharacter()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function getTorso()
+    local char = getCharacter()
+    return char and (char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"))
+end
+
+local function Fly()
+    local torso = getTorso()
+    if not torso then return end
+
+    bg = Instance.new("BodyGyro", torso)
+    bg.P = 9e4
+    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.cframe = torso.CFrame
+
+    bv = Instance.new("BodyVelocity", torso)
+    bv.velocity = Vector3.new(0,0.1,0)
+    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    flying = true
+    speed = 0
+
+    RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value, function()
+        if not flying then
+            RunService:UnbindFromRenderStep("Fly")
+            if bg then bg:Destroy() bg = nil end
+            if bv then bv:Destroy() bv = nil end
+            local char = getCharacter()
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                char.Humanoid.PlatformStand = false
+            end
+            return
+        end
+
+        local char = getCharacter()
+        if char and char:FindFirstChildOfClass("Humanoid") then
+            char.Humanoid.PlatformStand = true
+        end
+
+        local moveDirection = Vector3.new(0,0,0)
+        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+            speed = speed + 0.5 + (speed / maxspeed)
+            if speed > maxspeed then
+                speed = maxspeed
+            end
+        elseif speed > 0 then
+            speed = speed - 1
+            if speed < 0 then
+                speed = 0
+            end
+        end
+
+        if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+            moveDirection = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+            lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+        elseif speed ~= 0 then
+            moveDirection = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+        else
+            moveDirection = Vector3.new(0, 0.1, 0)
+        end
+
+        bv.velocity = moveDirection
+        bg.cframe = Camera.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * speed / maxspeed), 0, 0)
+    end)
+end
+
+local function startFly()
+    if flying then return end
+    flying = true
+    Fly()
+end
+
+local function stopFly()
+    flying = false
 end
 
 -- GUI Creation and redesign
@@ -500,12 +589,16 @@ function VexHub:CreateUI()
     local antiAFKButton = createButton("Toggle Anti-AFK", UniversalScroll)
     local wallClipButton = createButton("Toggle Wall Clip", UniversalScroll)
 
-    -- Create buttons for Gunfight Arena tab
+    -- Create buttons for Build A Boat tab
+    local BABAutoFarmButton = createButton("Toggle Auto Farm", BuildABoatScroll)
+
+    -- Create buttons for Gunfight tab
+    local gunfightESPButton = createButton("Toggle ESP", GunfightScroll)
     local teamCheckButton = createButton("Toggle Team Check", GunfightScroll)
     local aimbotButton = createButton("Toggle Aimbot", GunfightScroll)
     local increaseRangeButton = createButton("Increase Aimbot Range", GunfightScroll)
 
-    -- Button connections
+    -- Button connections for Universal tab
     flyButton.MouseButton1Click:Connect(function()
         if flying then
             stopFly()
@@ -592,9 +685,71 @@ function VexHub:CreateUI()
         end
     end)
 
+    -- Button connections for Build A Boat tab
+    BABAutoFarmButton.MouseButton1Click:Connect(function()
+        VexHub.Settings.BuildABoat.AutoFarm = not VexHub.Settings.BuildABoat.AutoFarm
+        if VexHub.Settings.BuildABoat.AutoFarm then
+            BABAutoFarmButton.Text = "Disable Auto Farm"
+            -- Auto farm logic
+            table.insert(VexHub.Connections, RunService.Heartbeat:Connect(function()
+                if not VexHub.Settings.BuildABoat.AutoFarm or not LocalPlayer.Character then
+                    VexHub:Cleanup()
+                    return
+                end
+                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if humanoid and rootPart then
+                    rootPart.CFrame = rootPart.CFrame + (rootPart.CFrame.LookVector * VexHub.Settings.BuildABoat.FarmSpeed * 0.1)
+                    humanoid:Move(Vector3.new(0, 0, 1), true)
+                end
+            end))
+        else
+            BABAutoFarmButton.Text = "Toggle Auto Farm"
+            VexHub:Cleanup()
+        end
+    end)
+
+    -- Button connections for Gunfight tab
+    gunfightESPButton.MouseButton1Click:Connect(function()
+        VexHub.Settings.Gunfight.ESP = not VexHub.Settings.Gunfight.ESP
+        if VexHub.Settings.Gunfight.ESP then
+            gunfightESPButton.Text = "Disable ESP"
+            -- ESP logic for Gunfight
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local highlight = player.Character:FindFirstChild("VexGunfightESP")
+                    if not highlight then
+                        local newHighlight = Instance.new("Highlight")
+                        newHighlight.Name = "VexGunfightESP"
+                        if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
+                            newHighlight.FillColor = Color3.fromRGB(0, 0, 255)
+                        else
+                            newHighlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        end
+                        newHighlight.OutlineColor = newHighlight.FillColor
+                        newHighlight.FillTransparency = 0.3
+                        newHighlight.OutlineTransparency = 0
+                        newHighlight.Parent = player.Character
+                    end
+                end
+            end
+        else
+            gunfightESPButton.Text = "Toggle ESP"
+            -- Remove ESP highlights
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local highlight = player.Character:FindFirstChild("VexGunfightESP")
+                    if highlight then
+                        highlight:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+
     teamCheckButton.MouseButton1Click:Connect(function()
-        teamCheckEnabled = not teamCheckEnabled
-        if teamCheckEnabled then
+        VexHub.Settings.Gunfight.TeamCheck = not VexHub.Settings.Gunfight.TeamCheck
+        if VexHub.Settings.Gunfight.TeamCheck then
             teamCheckButton.Text = "Disable Team Check"
         else
             teamCheckButton.Text = "Enable Team Check"
@@ -602,21 +757,85 @@ function VexHub:CreateUI()
     end)
 
     aimbotButton.MouseButton1Click:Connect(function()
-        aimbotEnabled = not aimbotEnabled
-        if aimbotEnabled then
+        VexHub.Settings.Gunfight.Aimbot = not VexHub.Settings.Gunfight.Aimbot
+        if VexHub.Settings.Gunfight.Aimbot then
             aimbotButton.Text = "Disable Aimbot"
+            -- Aimbot logic
+            table.insert(VexHub.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if gameProcessed then return end
+                if input.UserInputType == VexHub.Settings.Gunfight.AimKey then
+                    local closestPlayer, closestDistance = nil, math.huge
+                    local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if not localRoot then return end
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and player.Character then
+                            local character = player.Character
+                            local humanoid = character:FindFirstChildOfClass("Humanoid")
+                            local rootPart = character:FindFirstChild("HumanoidRootPart")
+                            local head = character:FindFirstChild("Head")
+                            if humanoid and humanoid.Health > 0 and rootPart and head then
+                                if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
+                                    continue
+                                end
+                                local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
+                                local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y))
+                                local magnitude = distance.Magnitude
+                                if onScreen and magnitude < VexHub.Settings.Gunfight.FOV and magnitude < closestDistance then
+                                    closestDistance = magnitude
+                                    closestPlayer = player
+                                end
+                            end
+                        end
+                    end
+                    if closestPlayer then
+                        local targetPart = closestPlayer.Character:FindFirstChild(VexHub.Settings.Gunfight.AimPart) or closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if targetPart then
+                            local aimPosition = targetPart.Position
+                            if VexHub.Settings.Gunfight.Smoothness > 0 then
+                                local currentLook = Camera.CFrame.LookVector
+                                local targetLook = (aimPosition - Camera.CFrame.Position).Unit
+                                local smoothedLook = currentLook:Lerp(targetLook, VexHub.Settings.Gunfight.Smoothness)
+                                Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + smoothedLook)
+                            else
+                                Camera.CFrame = CFrame.new(Camera.CFrame.Position, aimPosition)
+                            end
+                        end
+                    end
+                end
+            end))
         else
             aimbotButton.Text = "Enable Aimbot"
+            VexHub:Cleanup()
         end
     end)
 
     increaseRangeButton.MouseButton1Click:Connect(function()
-        if aimbotFOV == 100 then
-            aimbotFOV = 200
+        VexHub.Settings.Gunfight.IncreaseRange = not VexHub.Settings.Gunfight.IncreaseRange
+        if VexHub.Settings.Gunfight.IncreaseRange then
             increaseRangeButton.Text = "Decrease Aimbot Range"
+            for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, v in pairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") and (v.Name:lower():find("range") or v.Name:lower():find("distance")) then
+                            v.Value = VexHub.Settings.Gunfight.NewRange
+                        end
+                    end
+                end
+            end
+            table.insert(VexHub.Connections, LocalPlayer.CharacterAdded:Connect(function(character)
+                table.insert(VexHub.Connections, character.ChildAdded:Connect(function(tool)
+                    if tool:IsA("Tool") then
+                        for _, v in pairs(tool:GetDescendants()) do
+                            if v:IsA("NumberValue") and (v.Name:lower():find("range") or v.Name:lower():find("distance")) then
+                                v.Value = VexHub.Settings.Gunfight.NewRange
+                            end
+                        end
+                    end
+                end))
+            end))
         else
-            aimbotFOV = 100
             increaseRangeButton.Text = "Increase Aimbot Range"
+            VexHub:Cleanup()
         end
     end)
 
