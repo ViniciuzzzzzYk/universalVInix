@@ -1,5 +1,5 @@
--- Universal Vex Hub Script - Simplified GUI with all options visible
--- Includes autofarm for Build A Boat, ESP with team check, and aimbot with increased range for Gunfight
+-- Universal Vex Hub Script - Unified GUI with all features functional
+-- Includes autofarm for Build A Boat, team check and aimbot for Gunfight, and fixes for speed, jump, teleport, auto heal, and night mode
 
 local VexHub = {}
 
@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
 
 -- Settings
 VexHub.Settings = {
@@ -30,6 +31,14 @@ VexHub.Settings = {
     AimbotSmoothness = 0.1,
     IncreaseRange = false,
     NewRange = 500,
+    Speed = false,
+    SpeedValue = 50,
+    Jump = false,
+    JumpPowerValue = 100,
+    AutoHeal = false,
+    HealAmount = 10,
+    HealInterval = 1,
+    NightMode = false,
 }
 
 -- Connections
@@ -139,6 +148,137 @@ end
 
 local function stopFly()
     flying = false
+end
+
+-- Speed toggle
+local speedConnection
+local function toggleSpeed()
+    VexHub.Settings.Speed = not VexHub.Settings.Speed
+    local char = getCharacter()
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if VexHub.Settings.Speed then
+        humanoid.WalkSpeed = VexHub.Settings.SpeedValue
+        speedConnection = RunService.Heartbeat:Connect(function()
+            if not VexHub.Settings.Speed then
+                humanoid.WalkSpeed = 16
+                if speedConnection then
+                    speedConnection:Disconnect()
+                    speedConnection = nil
+                end
+            end
+        end)
+    else
+        humanoid.WalkSpeed = 16
+        if speedConnection then
+            speedConnection:Disconnect()
+            speedConnection = nil
+        end
+    end
+end
+
+-- Jump toggle
+local jumpConnection
+local function toggleJump()
+    VexHub.Settings.Jump = not VexHub.Settings.Jump
+    local char = getCharacter()
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if VexHub.Settings.Jump then
+        humanoid.JumpPower = VexHub.Settings.JumpPowerValue
+        jumpConnection = RunService.Heartbeat:Connect(function()
+            if not VexHub.Settings.Jump then
+                humanoid.JumpPower = 50
+                if jumpConnection then
+                    jumpConnection:Disconnect()
+                    jumpConnection = nil
+                end
+            end
+        end)
+    else
+        humanoid.JumpPower = 50
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+    end
+end
+
+-- Teleport to spawn
+local function teleportToSpawn()
+    local char = getCharacter()
+    if not char then return end
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    local spawnLocation = workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn")
+    if spawnLocation and spawnLocation:IsA("BasePart") then
+        rootPart.CFrame = spawnLocation.CFrame + Vector3.new(0, 5, 0)
+    end
+end
+
+-- Auto Heal
+local autoHealConnection
+local function toggleAutoHeal()
+    VexHub.Settings.AutoHeal = not VexHub.Settings.AutoHeal
+    local char = getCharacter()
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if VexHub.Settings.AutoHeal then
+        autoHealConnection = RunService.Heartbeat:Connect(function(dt)
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = math.min(humanoid.Health + VexHub.Settings.HealAmount * dt, humanoid.MaxHealth)
+            end
+            if not VexHub.Settings.AutoHeal then
+                if autoHealConnection then
+                    autoHealConnection:Disconnect()
+                    autoHealConnection = nil
+                end
+            end
+        end)
+    else
+        if autoHealConnection then
+            autoHealConnection:Disconnect()
+            autoHealConnection = nil
+        end
+    end
+end
+
+-- Night Mode toggle
+local nightModeConnection
+local defaultLightingSettings = {
+    Brightness = Lighting.Brightness,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    ClockTime = Lighting.ClockTime,
+}
+
+local nightLightingSettings = {
+    Brightness = 0.2,
+    Ambient = Color3.fromRGB(20, 20, 20),
+    OutdoorAmbient = Color3.fromRGB(10, 10, 10),
+    ClockTime = 0,
+}
+
+local function toggleNightMode()
+    VexHub.Settings.NightMode = not VexHub.Settings.NightMode
+    if VexHub.Settings.NightMode then
+        Lighting.Brightness = nightLightingSettings.Brightness
+        Lighting.Ambient = nightLightingSettings.Ambient
+        Lighting.OutdoorAmbient = nightLightingSettings.OutdoorAmbient
+        Lighting.ClockTime = nightLightingSettings.ClockTime
+    else
+        Lighting.Brightness = defaultLightingSettings.Brightness
+        Lighting.Ambient = defaultLightingSettings.Ambient
+        Lighting.OutdoorAmbient = defaultLightingSettings.OutdoorAmbient
+        Lighting.ClockTime = defaultLightingSettings.ClockTime
+    end
 end
 
 -- ESP for general and Gunfight
@@ -406,6 +546,51 @@ function VexHub:CreateUI()
         end
     end)
 
+    local speedButton = createButton("Toggle Speed")
+    speedButton.MouseButton1Click:Connect(function()
+        toggleSpeed()
+        if VexHub.Settings.Speed then
+            speedButton.Text = "Disable Speed"
+        else
+            speedButton.Text = "Toggle Speed"
+        end
+    end)
+
+    local jumpButton = createButton("Toggle Jump Boost")
+    jumpButton.MouseButton1Click:Connect(function()
+        toggleJump()
+        if VexHub.Settings.Jump then
+            jumpButton.Text = "Disable Jump Boost"
+        else
+            jumpButton.Text = "Toggle Jump Boost"
+        end
+    end)
+
+    local teleportButton = createButton("Teleport to Spawn")
+    teleportButton.MouseButton1Click:Connect(function()
+        teleportToSpawn()
+    end)
+
+    local autoHealButton = createButton("Toggle Auto Heal")
+    autoHealButton.MouseButton1Click:Connect(function()
+        toggleAutoHeal()
+        if VexHub.Settings.AutoHeal then
+            autoHealButton.Text = "Disable Auto Heal"
+        else
+            autoHealButton.Text = "Toggle Auto Heal"
+        end
+    end)
+
+    local nightModeButton = createButton("Toggle Night Mode")
+    nightModeButton.MouseButton1Click:Connect(function()
+        toggleNightMode()
+        if VexHub.Settings.NightMode then
+            nightModeButton.Text = "Disable Night Mode"
+        else
+            nightModeButton.Text = "Toggle Night Mode"
+        end
+    end)
+
     local espButton = createButton("Toggle ESP")
     espButton.MouseButton1Click:Connect(function()
         toggleESP()
@@ -468,8 +653,6 @@ function VexHub:CreateUI()
             autoFarmButton.Text = "Toggle Auto Farm"
         end
     end)
-
-    -- Additional buttons can be added here similarly
 
 end
 
