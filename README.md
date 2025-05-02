@@ -49,7 +49,7 @@ function VexHub:Cleanup()
     VexHub.Connections = {}
     
     -- Limpar ESPs
-for _, player in pairs(Players:GetPlayers()) do
+    for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local esp = player.Character:FindFirstChild("VexESP")
             if esp then esp:Destroy() end
@@ -61,23 +61,23 @@ end
 function VexHub:ToggleFly()
     VexHub.Settings.Universal.Fly = not VexHub.Settings.Universal.Fly
     
-if VexHub.Settings.Universal.Fly then
+    if VexHub.Settings.Universal.Fly then
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
         bodyVelocity.Parent = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         
-table.insert(VexHub.Connections, RunService.Heartbeat:Connect(function()
+        table.insert(VexHub.Connections, RunService.Heartbeat:Connect(function()
             if not VexHub.Settings.Universal.Fly or not LocalPlayer.Character then
                 VexHub:Cleanup()
                 return
             end
             
-local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if rootPart then
                 local newVelocity = Vector3.new(0, 0, 0)
                 
-if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                     newVelocity = newVelocity + (Camera.CFrame.LookVector * VexHub.Settings.Universal.FlySpeed)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then
@@ -90,9 +90,9 @@ if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                     newVelocity = newVelocity + (Camera.CFrame.RightVector * VexHub.Settings.Universal.FlySpeed)
                 end
                 
-rootPart.Velocity = Vector3.new(newVelocity.X, rootPart.Velocity.Y, newVelocity.Z)
+                rootPart.Velocity = Vector3.new(newVelocity.X, rootPart.Velocity.Y, newVelocity.Z)
                 
-if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                     bodyVelocity.Velocity = Vector3.new(0, VexHub.Settings.Universal.FlySpeed, 0)
                 elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
                     bodyVelocity.Velocity = Vector3.new(0, -VexHub.Settings.Universal.FlySpeed, 0)
@@ -109,14 +109,14 @@ end
 function VexHub:ToggleNoclip()
     VexHub.Settings.Universal.Noclip = not VexHub.Settings.Universal.Noclip
     
-if VexHub.Settings.Universal.Noclip then
+    if VexHub.Settings.Universal.Noclip then
         table.insert(VexHub.Connections, RunService.Stepped:Connect(function()
             if not VexHub.Settings.Universal.Noclip or not LocalPlayer.Character then
                 VexHub:Cleanup()
                 return
             end
             
-for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
@@ -130,7 +130,7 @@ end
 function VexHub:ToggleESP()
     VexHub.Settings.Universal.ESP = not VexHub.Settings.Universal.ESP
     
-if not VexHub.Settings.Universal.ESP then
+    if not VexHub.Settings.Universal.ESP then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
                 local highlight = player.Character:FindFirstChild("VexESP")
@@ -142,10 +142,10 @@ if not VexHub.Settings.Universal.ESP then
         return
     end
     
-local function createESP(player)
+    local function createESP(player)
         if player == LocalPlayer then return end
         
-local character = player.Character or player.CharacterAdded:Wait()
+        local character = player.Character or player.CharacterAdded:Wait()
         local highlight = Instance.new("Highlight")
         highlight.Name = "VexESP"
         highlight.FillColor = VexHub.Settings.Universal.ESPColor
@@ -155,7 +155,7 @@ local character = player.Character or player.CharacterAdded:Wait()
         highlight.Parent = character
     end
     
-for _, player in pairs(Players:GetPlayers()) do
+    for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if player.Character then
                 createESP(player)
@@ -166,7 +166,7 @@ for _, player in pairs(Players:GetPlayers()) do
         end
     end
     
-table.insert(VexHub.Connections, Players.PlayerAdded:Connect(function(player)
+    table.insert(VexHub.Connections, Players.PlayerAdded:Connect(function(player)
         table.insert(VexHub.Connections, player.CharacterAdded:Connect(function(character)
             createESP(player)
         end))
@@ -180,19 +180,19 @@ function VexHub:ToggleBABAutoFarm()
         return
     end
     
-VexHub.Settings.BuildABoat.AutoFarm = not VexHub.Settings.BuildABoat.AutoFarm
+    VexHub.Settings.BuildABoat.AutoFarm = not VexHub.Settings.BuildABoat.AutoFarm
     
-if VexHub.Settings.BuildABoat.AutoFarm then
+    if VexHub.Settings.BuildABoat.AutoFarm then
         table.insert(VexHub.Connections, RunService.Heartbeat:Connect(function()
             if not VexHub.Settings.BuildABoat.AutoFarm or not LocalPlayer.Character then
                 VexHub:Cleanup()
                 return
             end
             
-local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             
-if humanoid and rootPart then
+            if humanoid and rootPart then
                 rootPart.CFrame = rootPart.CFrame + (rootPart.CFrame.LookVector * VexHub.Settings.BuildABoat.FarmSpeed * 0.1)
                 humanoid:Move(Vector3.new(0, 0, 1), true)
             end
@@ -209,9 +209,9 @@ function VexHub:ToggleGunfightESP()
         return
     end
     
-VexHub.Settings.Gunfight.ESP = not VexHub.Settings.Gunfight.ESP
+    VexHub.Settings.Gunfight.ESP = not VexHub.Settings.Gunfight.ESP
     
-if not VexHub.Settings.Gunfight.ESP then
+    if not VexHub.Settings.Gunfight.ESP then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
                 local highlight = player.Character:FindFirstChild("VexGunfightESP")
@@ -223,26 +223,26 @@ if not VexHub.Settings.Gunfight.ESP then
         return
     end
     
-local function createGunfightESP(player)
+    local function createGunfightESP(player)
         if player == LocalPlayer then return end
         
-local character = player.Character or player.CharacterAdded:Wait()
+        local character = player.Character or player.CharacterAdded:Wait()
         local highlight = Instance.new("Highlight")
         highlight.Name = "VexGunfightESP"
         
-if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
+        if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
             highlight.FillColor = Color3.fromRGB(0, 0, 255)
         else
             highlight.FillColor = Color3.fromRGB(255, 0, 0)
         end
         
-highlight.OutlineColor = highlight.FillColor
+        highlight.OutlineColor = highlight.FillColor
         highlight.FillTransparency = 0.3
         highlight.OutlineTransparency = 0
         highlight.Parent = character
     end
     
-for _, player in pairs(Players:GetPlayers()) do
+    for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if player.Character then
                 createGunfightESP(player)
@@ -253,7 +253,7 @@ for _, player in pairs(Players:GetPlayers()) do
         end
     end
     
-table.insert(VexHub.Connections, Players.PlayerAdded:Connect(function(player)
+    table.insert(VexHub.Connections, Players.PlayerAdded:Connect(function(player)
         table.insert(VexHub.Connections, player.CharacterAdded:Connect(function(character)
             createGunfightESP(player)
         end))
@@ -266,35 +266,35 @@ function VexHub:ToggleAimbot()
         return
     end
     
-VexHub.Settings.Gunfight.Aimbot = not VexHub.Settings.Gunfight.Aimbot
+    VexHub.Settings.Gunfight.Aimbot = not VexHub.Settings.Gunfight.Aimbot
     
-if VexHub.Settings.Gunfight.Aimbot then
+    if VexHub.Settings.Gunfight.Aimbot then
         table.insert(VexHub.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if gameProcessed then return end
             
-if input.UserInputType == VexHub.Settings.Gunfight.AimKey then
+            if input.UserInputType == VexHub.Settings.Gunfight.AimKey then
                 local closestPlayer, closestDistance = nil, math.huge
                 local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-if not localRoot then return end
+                if not localRoot then return end
                 
-for _, player in pairs(Players:GetPlayers()) do
+                for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character then
                         local character = player.Character
                         local humanoid = character:FindFirstChildOfClass("Humanoid")
                         local rootPart = character:FindFirstChild("HumanoidRootPart")
                         local head = character:FindFirstChild("Head")
                         
-if humanoid and humanoid.Health > 0 and rootPart and head then
+                        if humanoid and humanoid.Health > 0 and rootPart and head then
                             if VexHub.Settings.Gunfight.TeamCheck and player.Team == LocalPlayer.Team then
                                 continue
                             end
                             
-local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
-                            local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+                            local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
+                            local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y))
                             local magnitude = distance.Magnitude
                             
-if onScreen and magnitude < VexHub.Settings.Gunfight.FOV and magnitude < closestDistance then
+                            if onScreen and magnitude < VexHub.Settings.Gunfight.FOV and magnitude < closestDistance then
                                 closestDistance = magnitude
                                 closestPlayer = player
                             end
@@ -302,7 +302,7 @@ if onScreen and magnitude < VexHub.Settings.Gunfight.FOV and magnitude < closest
                     end
                 end
                 
-if closestPlayer then
+                if closestPlayer then
                     local targetPart = closestPlayer.Character:FindFirstChild(VexHub.Settings.Gunfight.AimPart) or closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if targetPart then
                         local aimPosition = targetPart.Position
@@ -329,9 +329,9 @@ function VexHub:IncreaseGunRange()
         return
     end
     
-VexHub.Settings.Gunfight.IncreaseRange = not VexHub.Settings.Gunfight.IncreaseRange
+    VexHub.Settings.Gunfight.IncreaseRange = not VexHub.Settings.Gunfight.IncreaseRange
     
-if VexHub.Settings.Gunfight.IncreaseRange then
+    if VexHub.Settings.Gunfight.IncreaseRange then
         for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
             if tool:IsA("Tool") then
                 for _, v in pairs(tool:GetDescendants()) do
@@ -342,7 +342,7 @@ if VexHub.Settings.Gunfight.IncreaseRange then
             end
         end
         
-table.insert(VexHub.Connections, LocalPlayer.CharacterAdded:Connect(function(character)
+        table.insert(VexHub.Connections, LocalPlayer.CharacterAdded:Connect(function(character)
             table.insert(VexHub.Connections, character.ChildAdded:Connect(function(tool)
                 if tool:IsA("Tool") then
                     for _, v in pairs(tool:GetDescendants()) do
@@ -364,7 +364,7 @@ function VexHub:CreateUI()
         ScreenGui.Parent = game:GetService("CoreGui")
         ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-local MainFrame = Instance.new("Frame")
+        local MainFrame = Instance.new("Frame")
         MainFrame.Name = "MainFrame"
         MainFrame.Size = UDim2.new(0, 350, 0, 400)
         MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
@@ -373,7 +373,7 @@ local MainFrame = Instance.new("Frame")
         MainFrame.BorderSizePixel = 0
         MainFrame.Parent = ScreenGui
 
-local Title = Instance.new("TextLabel")
+        local Title = Instance.new("TextLabel")
         Title.Name = "Title"
         Title.Text = "Vex Hub"
         Title.Size = UDim2.new(1, 0, 0, 40)
@@ -384,14 +384,14 @@ local Title = Instance.new("TextLabel")
         Title.TextSize = 18
         Title.Parent = MainFrame
 
-local TabButtons = Instance.new("Frame")
+        local TabButtons = Instance.new("Frame")
         TabButtons.Name = "TabButtons"
         TabButtons.Size = UDim2.new(1, 0, 0, 30)
         TabButtons.Position = UDim2.new(0, 0, 0, 40)
         TabButtons.BackgroundTransparency = 1
         TabButtons.Parent = MainFrame
 
-local UniversalTab = Instance.new("TextButton")
+        local UniversalTab = Instance.new("TextButton")
         UniversalTab.Name = "UniversalTab"
         UniversalTab.Text = "Universal"
         UniversalTab.Size = UDim2.new(0.33, 0, 1, 0)
@@ -402,7 +402,7 @@ local UniversalTab = Instance.new("TextButton")
         UniversalTab.TextSize = 14
         UniversalTab.Parent = TabButtons
 
-local BABTab = Instance.new("TextButton")
+        local BABTab = Instance.new("TextButton")
         BABTab.Name = "BABTab"
         BABTab.Text = "Build A Boat"
         BABTab.Size = UDim2.new(0.34, 0, 1, 0)
@@ -413,7 +413,7 @@ local BABTab = Instance.new("TextButton")
         BABTab.TextSize = 14
         BABTab.Parent = TabButtons
 
-local GunfightTab = Instance.new("TextButton")
+        local GunfightTab = Instance.new("TextButton")
         GunfightTab.Name = "GunfightTab"
         GunfightTab.Text = "Gunfight"
         GunfightTab.Size = UDim2.new(0.33, 0, 1, 0)
@@ -424,7 +424,7 @@ local GunfightTab = Instance.new("TextButton")
         GunfightTab.TextSize = 14
         GunfightTab.Parent = TabButtons
 
-local TabContent = Instance.new("Frame")
+        local TabContent = Instance.new("Frame")
         TabContent.Name = "TabContent"
         TabContent.Size = UDim2.new(1, 0, 1, -70)
         TabContent.Position = UDim2.new(0, 0, 0, 70)
@@ -432,7 +432,7 @@ local TabContent = Instance.new("Frame")
         TabContent.Parent = MainFrame
 
         -- Conteúdo da aba Universal
-local UniversalContent = Instance.new("ScrollingFrame")
+        local UniversalContent = Instance.new("ScrollingFrame")
         UniversalContent.Name = "UniversalContent"
         UniversalContent.Size = UDim2.new(1, 0, 1, 0)
         UniversalContent.Position = UDim2.new(0, 0, 0, 0)
@@ -442,7 +442,7 @@ local UniversalContent = Instance.new("ScrollingFrame")
         UniversalContent.Visible = true
         UniversalContent.Parent = TabContent
 
-local FlyToggle = Instance.new("TextButton")
+        local FlyToggle = Instance.new("TextButton")
         FlyToggle.Name = "FlyToggle"
         FlyToggle.Text = "Fly: OFF"
         FlyToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -453,7 +453,7 @@ local FlyToggle = Instance.new("TextButton")
         FlyToggle.TextSize = 14
         FlyToggle.Parent = UniversalContent
 
-local NoclipToggle = Instance.new("TextButton")
+        local NoclipToggle = Instance.new("TextButton")
         NoclipToggle.Name = "NoclipToggle"
         NoclipToggle.Text = "Noclip: OFF"
         NoclipToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -464,7 +464,7 @@ local NoclipToggle = Instance.new("TextButton")
         NoclipToggle.TextSize = 14
         NoclipToggle.Parent = UniversalContent
 
-local ESPToggle = Instance.new("TextButton")
+        local ESPToggle = Instance.new("TextButton")
         ESPToggle.Name = "ESPToggle"
         ESPToggle.Text = "ESP: OFF"
         ESPToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -476,7 +476,7 @@ local ESPToggle = Instance.new("TextButton")
         ESPToggle.Parent = UniversalContent
 
         -- Conteúdo da aba Build A Boat
-local BABContent = Instance.new("ScrollingFrame")
+        local BABContent = Instance.new("ScrollingFrame")
         BABContent.Name = "BABContent"
         BABContent.Size = UDim2.new(1, 0, 1, 0)
         BABContent.Position = UDim2.new(0, 0, 0, 0)
@@ -486,7 +486,7 @@ local BABContent = Instance.new("ScrollingFrame")
         BABContent.Visible = false
         BABContent.Parent = TabContent
 
-local AutoFarmToggle = Instance.new("TextButton")
+        local AutoFarmToggle = Instance.new("TextButton")
         AutoFarmToggle.Name = "AutoFarmToggle"
         AutoFarmToggle.Text = "Auto Farm: OFF"
         AutoFarmToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -498,7 +498,7 @@ local AutoFarmToggle = Instance.new("TextButton")
         AutoFarmToggle.Parent = BABContent
 
         -- Conteúdo da aba Gunfight
-local GunfightContent = Instance.new("ScrollingFrame")
+        local GunfightContent = Instance.new("ScrollingFrame")
         GunfightContent.Name = "GunfightContent"
         GunfightContent.Size = UDim2.new(1, 0, 1, 0)
         GunfightContent.Position = UDim2.new(0, 0, 0, 0)
@@ -508,7 +508,7 @@ local GunfightContent = Instance.new("ScrollingFrame")
         GunfightContent.Visible = false
         GunfightContent.Parent = TabContent
 
-local GunfightESPToggle = Instance.new("TextButton")
+        local GunfightESPToggle = Instance.new("TextButton")
         GunfightESPToggle.Name = "GunfightESPToggle"
         GunfightESPToggle.Text = "ESP: OFF"
         GunfightESPToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -519,7 +519,7 @@ local GunfightESPToggle = Instance.new("TextButton")
         GunfightESPToggle.TextSize = 14
         GunfightESPToggle.Parent = GunfightContent
 
-local TeamCheckToggle = Instance.new("TextButton")
+        local TeamCheckToggle = Instance.new("TextButton")
         TeamCheckToggle.Name = "TeamCheckToggle"
         TeamCheckToggle.Text = "Team Check: ON"
         TeamCheckToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -530,7 +530,7 @@ local TeamCheckToggle = Instance.new("TextButton")
         TeamCheckToggle.TextSize = 14
         TeamCheckToggle.Parent = GunfightContent
 
-local AimbotToggle = Instance.new("TextButton")
+        local AimbotToggle = Instance.new("TextButton")
         AimbotToggle.Name = "AimbotToggle"
         AimbotToggle.Text = "Aimbot: OFF"
         AimbotToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -541,7 +541,7 @@ local AimbotToggle = Instance.new("TextButton")
         AimbotToggle.TextSize = 14
         AimbotToggle.Parent = GunfightContent
 
-local IncreaseRangeToggle = Instance.new("TextButton")
+        local IncreaseRangeToggle = Instance.new("TextButton")
         IncreaseRangeToggle.Name = "IncreaseRangeToggle"
         IncreaseRangeToggle.Text = "Increase Range: OFF"
         IncreaseRangeToggle.Size = UDim2.new(0.9, 0, 0, 40)
@@ -553,95 +553,95 @@ local IncreaseRangeToggle = Instance.new("TextButton")
         IncreaseRangeToggle.Parent = GunfightContent
 
         -- Conectando os botões
-FlyToggle.MouseButton1Click:Connect(function()
+        FlyToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleFly()
             FlyToggle.Text = "Fly: " .. (VexHub.Settings.Universal.Fly and "ON" or "OFF")
         end)
         
-NoclipToggle.MouseButton1Click:Connect(function()
+        NoclipToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleNoclip()
             NoclipToggle.Text = "Noclip: " .. (VexHub.Settings.Universal.Noclip and "ON" or "OFF")
         end)
         
-ESPToggle.MouseButton1Click:Connect(function()
+        ESPToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleESP()
             ESPToggle.Text = "ESP: " .. (VexHub.Settings.Universal.ESP and "ON" or "OFF")
         end)
         
-AutoFarmToggle.MouseButton1Click:Connect(function()
+        AutoFarmToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleBABAutoFarm()
             AutoFarmToggle.Text = "Auto Farm: " .. (VexHub.Settings.BuildABoat.AutoFarm and "ON" or "OFF")
         end)
         
-GunfightESPToggle.MouseButton1Click:Connect(function()
+        GunfightESPToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleGunfightESP()
             GunfightESPToggle.Text = "ESP: " .. (VexHub.Settings.Gunfight.ESP and "ON" or "OFF")
         end)
         
-TeamCheckToggle.MouseButton1Click:Connect(function()
+        TeamCheckToggle.MouseButton1Click:Connect(function()
             VexHub.Settings.Gunfight.TeamCheck = not VexHub.Settings.Gunfight.TeamCheck
             TeamCheckToggle.Text = "Team Check: " .. (VexHub.Settings.Gunfight.TeamCheck and "ON" or "OFF")
         end)
         
-AimbotToggle.MouseButton1Click:Connect(function()
+        AimbotToggle.MouseButton1Click:Connect(function()
             VexHub:ToggleAimbot()
             AimbotToggle.Text = "Aimbot: " .. (VexHub.Settings.Gunfight.Aimbot and "ON" or "OFF")
         end)
         
-IncreaseRangeToggle.MouseButton1Click:Connect(function()
+        IncreaseRangeToggle.MouseButton1Click:Connect(function()
             VexHub:IncreaseGunRange()
             IncreaseRangeToggle.Text = "Increase Range: " .. (VexHub.Settings.Gunfight.IncreaseRange and "ON" or "OFF")
         end)
         
         -- Lógica de troca de abas
-UniversalTab.MouseButton1Click:Connect(function()
+        UniversalTab.MouseButton1Click:Connect(function()
             UniversalContent.Visible = true
             BABContent.Visible = false
             GunfightContent.Visible = false
             
- UniversalTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            UniversalTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
             BABTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             GunfightTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end)
         
-BABTab.MouseButton1Click:Connect(function()
+        BABTab.MouseButton1Click:Connect(function()
             UniversalContent.Visible = false
             BABContent.Visible = true
             GunfightContent.Visible = false
             
-UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             BABTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
             GunfightTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end)
         
-GunfightTab.MouseButton1Click:Connect(function()
+        GunfightTab.MouseButton1Click:Connect(function()
             UniversalContent.Visible = false
             BABContent.Visible = false
             GunfightContent.Visible = true
             
-UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            UniversalTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             BABTab.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             GunfightTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         end)
         
         -- Tornar a janela arrastável
-local dragging
+        local dragging
         local dragInput
         local dragStart
         local startPos
         
-local function update(input)
+        local function update(input)
             local delta = input.Position - dragStart
             MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
         
-Title.InputBegan:Connect(function(input)
+        Title.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
                 startPos = MainFrame.Position
                 
-input.Changed:Connect(function()
+                input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         dragging = false
                     end
@@ -649,20 +649,20 @@ input.Changed:Connect(function()
             end
         end)
         
-Title.InputChanged:Connect(function(input)
+        Title.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 dragInput = input
             end
         end)
         
-UserInputService.InputChanged:Connect(function(input)
+        UserInputService.InputChanged:Connect(function(input)
             if input == dragInput and dragging then
                 update(input)
             end
         end)
         
         -- Fechar GUI quando o script for reiniciado
-table.insert(VexHub.Connections, game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+        table.insert(VexHub.Connections, game:GetService("CoreGui").ChildRemoved:Connect(function(child)
             if child.Name == "VexHubUI" then
                 VexHub:Cleanup()
             end
