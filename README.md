@@ -1,5 +1,5 @@
--- Universal Vex Hub Script - All features in a single tab (no tabs)
--- Includes BAB Farm, Gunfight ESP, Team Check, Aimbot, and other features unified in one GUI
+-- Universal Vex Hub Script - Single GUI with all features integrated
+-- Includes BAB Farm (teleport autofarm), ESP with team check and aimbot, and other features unified
 
 local VexHub = {}
 
@@ -225,114 +225,7 @@ local function toggleBABFarm()
     end
 end
 
--- Other features (speed, jump, teleport, auto heal, night mode, ESP, gunfight ESP, team check, aimbot, increase range) remain as previously implemented
--- For brevity, reusing previous implementations for these features
-
--- Speed toggle
-local speedConnection
-local function toggleSpeed()
-    VexHub.Settings.Speed = not VexHub.Settings.Speed
-    local char = getCharacter()
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
-    if VexHub.Settings.Speed then
-        humanoid.WalkSpeed = VexHub.Settings.SpeedValue
-    else
-        humanoid.WalkSpeed = 16
-    end
-end
-
--- Jump toggle
-local jumpConnection
-local function toggleJump()
-    VexHub.Settings.Jump = not VexHub.Settings.Jump
-    local char = getCharacter()
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
-    if VexHub.Settings.Jump then
-        humanoid.JumpPower = VexHub.Settings.JumpPowerValue
-    else
-        humanoid.JumpPower = 50
-    end
-end
-
--- Teleport to spawn
-local function teleportToSpawn()
-    local char = getCharacter()
-    if not char then return end
-    local rootPart = char:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    local spawnLocation = workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn")
-    if spawnLocation and spawnLocation:IsA("BasePart") then
-        rootPart.CFrame = spawnLocation.CFrame + Vector3.new(0, 5, 0)
-    end
-end
-
--- Auto Heal
-local autoHealConnection
-local function toggleAutoHeal()
-    VexHub.Settings.AutoHeal = not VexHub.Settings.AutoHeal
-    local char = getCharacter()
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
-    if VexHub.Settings.AutoHeal then
-        autoHealConnection = RunService.Heartbeat:Connect(function(dt)
-            if humanoid.Health < humanoid.MaxHealth then
-                humanoid.Health = math.min(humanoid.Health + VexHub.Settings.HealAmount * dt, humanoid.MaxHealth)
-            end
-            if not VexHub.Settings.AutoHeal then
-                if autoHealConnection then
-                    autoHealConnection:Disconnect()
-                    autoHealConnection = nil
-                end
-            end
-        end)
-    else
-        if autoHealConnection then
-            autoHealConnection:Disconnect()
-            autoHealConnection = nil
-        end
-    end
-end
-
--- Night Mode toggle
-local defaultLightingSettings = {
-    Brightness = Lighting.Brightness,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
-    ClockTime = Lighting.ClockTime,
-}
-
-local nightLightingSettings = {
-    Brightness = 0.2,
-    Ambient = Color3.fromRGB(20, 20, 20),
-    OutdoorAmbient = Color3.fromRGB(10, 10, 10),
-    ClockTime = 0,
-}
-
-local function toggleNightMode()
-    VexHub.Settings.NightMode = not VexHub.Settings.NightMode
-    if VexHub.Settings.NightMode then
-        Lighting.Brightness = nightLightingSettings.Brightness
-        Lighting.Ambient = nightLightingSettings.Ambient
-        Lighting.OutdoorAmbient = nightLightingSettings.OutdoorAmbient
-        Lighting.ClockTime = nightLightingSettings.ClockTime
-    else
-        Lighting.Brightness = defaultLightingSettings.Brightness
-        Lighting.Ambient = defaultLightingSettings.Ambient
-        Lighting.OutdoorAmbient = defaultLightingSettings.OutdoorAmbient
-        Lighting.ClockTime = defaultLightingSettings.ClockTime
-    end
-end
-
--- ESP for general and Gunfight
+-- ESP for general and Gunfight with team check integrated
 local espBoxes = {}
 
 local function toggleESP()
@@ -340,16 +233,20 @@ local function toggleESP()
     if VexHub.Settings.ESP then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local box = Instance.new("BoxHandleAdornment")
-                box.Name = "VexESP"
-                box.Adornee = player.Character.HumanoidRootPart
-                box.AlwaysOnTop = true
-                box.ZIndex = 10
-                box.Size = Vector3.new(4, 6, 1)
-                box.Color3 = Color3.fromRGB(0, 255, 0)
-                box.Transparency = 0.5
-                box.Parent = Camera
-                espBoxes[player] = box
+                if VexHub.Settings.ESPTeamCheck and player.Team == LocalPlayer.Team then
+                    -- Skip teammates if team check enabled
+                else
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Name = "VexESP"
+                    box.Adornee = player.Character.HumanoidRootPart
+                    box.AlwaysOnTop = true
+                    box.ZIndex = 10
+                    box.Size = Vector3.new(4, 6, 1)
+                    box.Color3 = Color3.fromRGB(0, 255, 0)
+                    box.Transparency = 0.5
+                    box.Parent = Camera
+                    espBoxes[player] = box
+                end
             end
         end
     else
@@ -360,24 +257,25 @@ local function toggleESP()
     end
 end
 
+-- Gunfight ESP integrated with team check
 local function toggleGunfightESP()
     VexHub.Settings.GunfightESP = not VexHub.Settings.GunfightESP
     if VexHub.Settings.GunfightESP then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
-                local highlight = player.Character:FindFirstChild("VexGunfightESP")
-                if not highlight then
-                    local newHighlight = Instance.new("Highlight")
-                    newHighlight.Name = "VexGunfightESP"
-                    if VexHub.Settings.GunfightTeamCheck and player.Team == LocalPlayer.Team then
-                        newHighlight.FillColor = Color3.fromRGB(0, 0, 255)
-                    else
+                if VexHub.Settings.GunfightTeamCheck and player.Team == LocalPlayer.Team then
+                    -- Skip teammates if team check enabled
+                else
+                    local highlight = player.Character:FindFirstChild("VexGunfightESP")
+                    if not highlight then
+                        local newHighlight = Instance.new("Highlight")
+                        newHighlight.Name = "VexGunfightESP"
                         newHighlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        newHighlight.OutlineColor = newHighlight.FillColor
+                        newHighlight.FillTransparency = 0.3
+                        newHighlight.OutlineTransparency = 0
+                        newHighlight.Parent = player.Character
                     end
-                    newHighlight.OutlineColor = newHighlight.FillColor
-                    newHighlight.FillTransparency = 0.3
-                    newHighlight.OutlineTransparency = 0
-                    newHighlight.Parent = player.Character
                 end
             end
         end
@@ -393,9 +291,10 @@ local function toggleGunfightESP()
     end
 end
 
--- Team check toggle for Gunfight ESP and Aimbot
-local function toggleGunfightTeamCheck()
-    VexHub.Settings.GunfightTeamCheck = not VexHub.Settings.GunfightTeamCheck
+-- Team check toggle for ESP and Aimbot
+local function toggleTeamCheck()
+    VexHub.Settings.ESPTeamCheck = not VexHub.Settings.ESPTeamCheck
+    VexHub.Settings.GunfightTeamCheck = VexHub.Settings.ESPTeamCheck
 end
 
 -- Aimbot variables
@@ -469,7 +368,7 @@ local function toggleIncreaseRange()
     end
 end
 
--- GUI Creation without tabs, all options in one scroll frame
+-- GUI Creation single unified GUI
 function VexHub:CreateUI()
     if game:GetService("CoreGui"):FindFirstChild("VexHubUI") then
         return
@@ -603,20 +502,34 @@ function VexHub:CreateUI()
 
     local speedButton = createButton("Toggle Speed")
     speedButton.MouseButton1Click:Connect(function()
-        toggleSpeed()
+        VexHub.Settings.Speed = not VexHub.Settings.Speed
+        local char = getCharacter()
+        if not char then return end
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
         if VexHub.Settings.Speed then
+            humanoid.WalkSpeed = VexHub.Settings.SpeedValue
             speedButton.Text = "Disable Speed"
         else
+            humanoid.WalkSpeed = 16
             speedButton.Text = "Toggle Speed"
         end
     end)
 
     local jumpButton = createButton("Toggle Jump Boost")
     jumpButton.MouseButton1Click:Connect(function()
-        toggleJump()
+        VexHub.Settings.Jump = not VexHub.Settings.Jump
+        local char = getCharacter()
+        if not char then return end
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
         if VexHub.Settings.Jump then
+            humanoid.JumpPower = VexHub.Settings.JumpPowerValue
             jumpButton.Text = "Disable Jump Boost"
         else
+            humanoid.JumpPower = 50
             jumpButton.Text = "Toggle Jump Boost"
         end
     end)
@@ -668,8 +581,8 @@ function VexHub:CreateUI()
 
     local teamCheckButton = createButton("Toggle Team Check")
     teamCheckButton.MouseButton1Click:Connect(function()
-        toggleGunfightTeamCheck()
-        if VexHub.Settings.GunfightTeamCheck then
+        toggleTeamCheck()
+        if VexHub.Settings.ESPTeamCheck then
             teamCheckButton.Text = "Disable Team Check"
         else
             teamCheckButton.Text = "Enable Team Check"
