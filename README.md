@@ -1,5 +1,5 @@
--- Universal Vex Hub Script - Unified GUI with all features functional
--- Includes autofarm for Build A Boat, team check and aimbot for Gunfight, and fixes for speed, jump, teleport, auto heal, and night mode
+-- Universal Vex Hub Script with Tabs and Improved Features
+-- Includes BAB Farm (teleport autofarm), fixed Fly, and organized tabs for Universal, Build A Boat, Gunfight
 
 local VexHub = {}
 
@@ -17,11 +17,9 @@ local VirtualUser = game:GetService("VirtualUser")
 VexHub.Settings = {
     Fly = false,
     FlySpeed = 50,
-    Noclip = false,
     ESP = false,
     ESPTeamCheck = true,
-    AutoFarm = false,
-    AutoFarmSpeed = 1,
+    BABFarm = false,
     GunfightESP = false,
     GunfightTeamCheck = true,
     Aimbot = false,
@@ -62,7 +60,7 @@ function VexHub:Cleanup()
     end
 end
 
--- Fly variables
+-- Fly variables and improved movement
 local flying = false
 local ctrl = {f = 0, b = 0, l = 0, r = 0}
 local lastctrl = {f = 0, b = 0, l = 0, r = 0}
@@ -127,10 +125,10 @@ local function Fly()
 
         local moveDirection = Vector3.new(0,0,0)
         if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-            moveDirection = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+            moveDirection = ((Camera.CFrame.LookVector * (ctrl.f + ctrl.b)) + ((Camera.CFrame * CFrame.new(ctrl.l + ctrl.r, 0, (ctrl.f + ctrl.b) * 0.2).p) - Camera.CFrame.p)) * speed
             lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
         elseif speed ~= 0 then
-            moveDirection = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - Camera.CFrame.p)) * speed
+            moveDirection = ((Camera.CFrame.LookVector * (lastctrl.f + lastctrl.b)) + ((Camera.CFrame * CFrame.new(lastctrl.l + lastctrl.r, 0, (lastctrl.f + lastctrl.b) * 0.2).p) - Camera.CFrame.p)) * speed
         else
             moveDirection = Vector3.new(0, 0.1, 0)
         end
@@ -149,6 +147,86 @@ end
 local function stopFly()
     flying = false
 end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 1
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = -1
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = -1
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 1
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 0
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = 0
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = 0
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 0
+        end
+    end
+end)
+
+-- BAB Farm (Build A Boat) teleport autofarm
+local BABFarmConnection
+local BABFarmLocations = {
+    CFrame.new(-61, 70.739624, 125),
+    CFrame.new(-55.7065125, 70.739624, 9492.35645),
+    CFrame.new(-55.7065125, -360.739624, 9492.35645),
+}
+
+local function toggleBABFarm()
+    VexHub.Settings.BABFarm = not VexHub.Settings.BABFarm
+    local char = getCharacter()
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not rootPart then return end
+
+    if VexHub.Settings.BABFarm then
+        BABFarmConnection = RunService.Heartbeat:Connect(function()
+            if not VexHub.Settings.BABFarm or not LocalPlayer.Character then
+                if BABFarmConnection then
+                    BABFarmConnection:Disconnect()
+                    BABFarmConnection = nil
+                end
+                return
+            end
+            for _, location in ipairs(BABFarmLocations) do
+                if not VexHub.Settings.BABFarm then break end
+                local tween = TweenService:Create(rootPart, TweenInfo.new(3), {CFrame = location})
+                tween:Play()
+                tween.Completed:Wait()
+                wait(0.1)
+                if hum.Health == 0 then break end
+            end
+            if hum.Health > 0 then
+                workspace.ClaimRiverResultsGold:FireServer()
+            end
+        end)
+    else
+        if BABFarmConnection then
+            BABFarmConnection:Disconnect()
+            BABFarmConnection = nil
+        end
+    end
+end
+
+-- Other features (speed, jump, teleport, auto heal, night mode, ESP, gunfight ESP, team check, aimbot, increase range) remain as previously implemented
+-- For brevity, reusing previous implementations for these features
 
 -- Speed toggle
 local speedConnection
@@ -251,7 +329,6 @@ local function toggleAutoHeal()
 end
 
 -- Night Mode toggle
-local nightModeConnection
 local defaultLightingSettings = {
     Brightness = Lighting.Brightness,
     Ambient = Lighting.Ambient,
@@ -418,35 +495,7 @@ local function toggleIncreaseRange()
     end
 end
 
--- AutoFarm for Build A Boat
-local autoFarmConnection
-local function toggleAutoFarm()
-    VexHub.Settings.AutoFarm = not VexHub.Settings.AutoFarm
-    if VexHub.Settings.AutoFarm then
-        autoFarmConnection = RunService.Heartbeat:Connect(function()
-            if not VexHub.Settings.AutoFarm or not LocalPlayer.Character then
-                if autoFarmConnection then
-                    autoFarmConnection:Disconnect()
-                    autoFarmConnection = nil
-                end
-                return
-            end
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if humanoid and rootPart then
-                rootPart.CFrame = rootPart.CFrame + (rootPart.CFrame.LookVector * VexHub.Settings.AutoFarmSpeed * 0.1)
-                humanoid:Move(Vector3.new(0, 0, 1), true)
-            end
-        end)
-    else
-        if autoFarmConnection then
-            autoFarmConnection:Disconnect()
-            autoFarmConnection = nil
-        end
-    end
-end
-
--- GUI Creation
+-- GUI Creation with tabs
 function VexHub:CreateUI()
     if game:GetService("CoreGui"):FindFirstChild("VexHubUI") then
         return
@@ -458,8 +507,8 @@ function VexHub:CreateUI()
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local screenSize = Camera.ViewportSize
-    local guiWidth = math.clamp(screenSize.X * 0.2, 280, 350)
-    local guiHeight = math.clamp(screenSize.Y * 0.7, 350, 600)
+    local guiWidth = math.clamp(screenSize.X * 0.22, 280, 350)
+    local guiHeight = math.clamp(screenSize.Y * 0.7, 350, 500)
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
@@ -490,25 +539,155 @@ function VexHub:CreateUI()
     Title.TextSize = 28
     Title.Parent = MainFrame
 
-    local ScrollFrame = Instance.new("ScrollingFrame")
-    ScrollFrame.Size = UDim2.new(1, -20, 1, -60)
-    ScrollFrame.Position = UDim2.new(0, 10, 0, 50)
-    ScrollFrame.BackgroundTransparency = 1
-    ScrollFrame.BorderSizePixel = 0
-    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    ScrollFrame.ScrollBarThickness = 6
-    ScrollFrame.Parent = MainFrame
+    -- Minimize button
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeButton.Position = UDim2.new(1, -40, 0, 10)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    MinimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+    MinimizeButton.Font = Enum.Font.GothamBold
+    MinimizeButton.TextSize = 20
+    MinimizeButton.Text = "-"
+    MinimizeButton.Parent = MainFrame
 
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 10)
-    UIListLayout.Parent = ScrollFrame
+    local MinimizedButton = Instance.new("TextButton")
+    MinimizedButton.Size = UDim2.new(0, 40, 0, 40)
+    MinimizedButton.Position = UDim2.new(0, 10, 0, 10)
+    MinimizedButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    MinimizedButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+    MinimizedButton.Font = Enum.Font.GothamBold
+    MinimizedButton.TextSize = 24
+    MinimizedButton.Text = "V"
+    MinimizedButton.Visible = false
+    MinimizedButton.Parent = ScreenGui
 
-    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    MinimizeButton.MouseButton1Click:Connect(function()
+        MainFrame.Visible = false
+        MinimizedButton.Visible = true
     end)
 
-    local function createButton(text)
+    MinimizedButton.MouseButton1Click:Connect(function()
+        MainFrame.Visible = true
+        MinimizedButton.Visible = false
+    end)
+
+    -- Tab container
+    local TabContainer = Instance.new("Frame")
+    TabContainer.Size = UDim2.new(0, 120, 1, -45)
+    TabContainer.Position = UDim2.new(0, 0, 0, 45)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.Parent = MainFrame
+
+    local function createTabButton(text, positionY)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 40)
+        btn.Position = UDim2.new(0, 0, 0, positionY)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 18
+        btn.Text = text
+        btn.AutoButtonColor = true
+        btn.Parent = TabContainer
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = btn
+
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            if btn.BackgroundColor3 ~= Color3.fromRGB(80, 80, 80) then
+                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+            end
+        end)
+
+        return btn
+    end
+
+    local UniversalTabButton = createTabButton("Universal", 0)
+    local BuildABoatTabButton = createTabButton("Build A Boat", 50)
+    local GunfightTabButton = createTabButton("Gunfight", 100)
+
+    -- Content frames for tabs
+    local UniversalTab = Instance.new("Frame")
+    UniversalTab.Size = UDim2.new(1, -120, 1, -45)
+    UniversalTab.Position = UDim2.new(0, 120, 0, 45)
+    UniversalTab.BackgroundTransparency = 1
+    UniversalTab.Parent = MainFrame
+
+    local BuildABoatTab = Instance.new("Frame")
+    BuildABoatTab.Size = UDim2.new(1, -120, 1, -45)
+    BuildABoatTab.Position = UDim2.new(0, 120, 0, 45)
+    BuildABoatTab.BackgroundTransparency = 1
+    BuildABoatTab.Visible = false
+    BuildABoatTab.Parent = MainFrame
+
+    local GunfightTab = Instance.new("Frame")
+    GunfightTab.Size = UDim2.new(1, -120, 1, -45)
+    GunfightTab.Position = UDim2.new(0, 120, 0, 45)
+    GunfightTab.BackgroundTransparency = 1
+    GunfightTab.Visible = false
+    GunfightTab.Parent = MainFrame
+
+    -- ScrollFrames for each tab
+    local UniversalScroll = Instance.new("ScrollingFrame")
+    UniversalScroll.Size = UDim2.new(1, -20, 1, -20)
+    UniversalScroll.Position = UDim2.new(0, 10, 0, 10)
+    UniversalScroll.BackgroundTransparency = 1
+    UniversalScroll.BorderSizePixel = 0
+    UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    UniversalScroll.ScrollBarThickness = 6
+    UniversalScroll.Parent = UniversalTab
+
+    local BuildABoatScroll = Instance.new("ScrollingFrame")
+    BuildABoatScroll.Size = UDim2.new(1, -20, 1, -20)
+    BuildABoatScroll.Position = UDim2.new(0, 10, 0, 10)
+    BuildABoatScroll.BackgroundTransparency = 1
+    BuildABoatScroll.BorderSizePixel = 0
+    BuildABoatScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    BuildABoatScroll.ScrollBarThickness = 6
+    BuildABoatScroll.Parent = BuildABoatTab
+
+    local GunfightScroll = Instance.new("ScrollingFrame")
+    GunfightScroll.Size = UDim2.new(1, -20, 1, -20)
+    GunfightScroll.Position = UDim2.new(0, 10, 0, 10)
+    GunfightScroll.BackgroundTransparency = 1
+    GunfightScroll.BorderSizePixel = 0
+    GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    GunfightScroll.ScrollBarThickness = 6
+    GunfightScroll.Parent = GunfightTab
+
+    local UniversalLayout = Instance.new("UIListLayout")
+    UniversalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UniversalLayout.Padding = UDim.new(0, 10)
+    UniversalLayout.Parent = UniversalScroll
+
+    local BuildABoatLayout = Instance.new("UIListLayout")
+    BuildABoatLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    BuildABoatLayout.Padding = UDim.new(0, 10)
+    BuildABoatLayout.Parent = BuildABoatScroll
+
+    local GunfightLayout = Instance.new("UIListLayout")
+    GunfightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    GunfightLayout.Padding = UDim.new(0, 10)
+    GunfightLayout.Parent = GunfightScroll
+
+    UniversalLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        UniversalScroll.CanvasSize = UDim2.new(0, 0, 0, UniversalLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    BuildABoatLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        BuildABoatScroll.CanvasSize = UDim2.new(0, 0, 0, BuildABoatLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    GunfightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        GunfightScroll.CanvasSize = UDim2.new(0, 0, 0, GunfightLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- Utility function to create buttons inside a parent frame
+    local function createButton(text, parent)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 40)
         btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -517,7 +696,7 @@ function VexHub:CreateUI()
         btn.TextSize = 20
         btn.Text = text
         btn.AutoButtonColor = true
-        btn.Parent = ScrollFrame
+        btn.Parent = parent
 
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(0, 12)
@@ -533,9 +712,26 @@ function VexHub:CreateUI()
         return btn
     end
 
-    -- Create buttons and connect functions
+    -- Universal tab buttons
+    local flyButton = createButton("Toggle Fly", UniversalScroll)
+    local speedButton = createButton("Toggle Speed", UniversalScroll)
+    local jumpButton = createButton("Toggle Jump Boost", UniversalScroll)
+    local teleportButton = createButton("Teleport to Spawn", UniversalScroll)
+    local autoHealButton = createButton("Toggle Auto Heal", UniversalScroll)
+    local nightModeButton = createButton("Toggle Night Mode", UniversalScroll)
+    local espButton = createButton("Toggle ESP", UniversalScroll)
 
-    local flyButton = createButton("Toggle Fly")
+    -- Build A Boat tab buttons
+    local BABFarmButton = createButton("Toggle BAB Farm", BuildABoatScroll)
+
+    -- Gunfight tab buttons
+    local gunfightESPButton = createButton("Toggle Gunfight ESP", GunfightScroll)
+    local teamCheckButton = createButton("Toggle Team Check", GunfightScroll)
+    local aimbotButton = createButton("Toggle Aimbot", GunfightScroll)
+    local increaseRangeButton = createButton("Toggle Increase Range", GunfightScroll)
+
+    -- Button connections
+
     flyButton.MouseButton1Click:Connect(function()
         if flying then
             stopFly()
@@ -546,32 +742,38 @@ function VexHub:CreateUI()
         end
     end)
 
-    local speedButton = createButton("Toggle Speed")
     speedButton.MouseButton1Click:Connect(function()
-        toggleSpeed()
+        VexHub.Settings.Speed = not VexHub.Settings.Speed
+        local char = getCharacter()
+        if not char then return end
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
         if VexHub.Settings.Speed then
-            speedButton.Text = "Disable Speed"
+            humanoid.WalkSpeed = VexHub.Settings.SpeedValue
         else
-            speedButton.Text = "Toggle Speed"
+            humanoid.WalkSpeed = 16
         end
     end)
 
-    local jumpButton = createButton("Toggle Jump Boost")
     jumpButton.MouseButton1Click:Connect(function()
-        toggleJump()
+        VexHub.Settings.Jump = not VexHub.Settings.Jump
+        local char = getCharacter()
+        if not char then return end
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
         if VexHub.Settings.Jump then
-            jumpButton.Text = "Disable Jump Boost"
+            humanoid.JumpPower = VexHub.Settings.JumpPowerValue
         else
-            jumpButton.Text = "Toggle Jump Boost"
+            humanoid.JumpPower = 50
         end
     end)
 
-    local teleportButton = createButton("Teleport to Spawn")
     teleportButton.MouseButton1Click:Connect(function()
         teleportToSpawn()
     end)
 
-    local autoHealButton = createButton("Toggle Auto Heal")
     autoHealButton.MouseButton1Click:Connect(function()
         toggleAutoHeal()
         if VexHub.Settings.AutoHeal then
@@ -581,7 +783,6 @@ function VexHub:CreateUI()
         end
     end)
 
-    local nightModeButton = createButton("Toggle Night Mode")
     nightModeButton.MouseButton1Click:Connect(function()
         toggleNightMode()
         if VexHub.Settings.NightMode then
@@ -591,7 +792,6 @@ function VexHub:CreateUI()
         end
     end)
 
-    local espButton = createButton("Toggle ESP")
     espButton.MouseButton1Click:Connect(function()
         toggleESP()
         if VexHub.Settings.ESP then
@@ -601,7 +801,15 @@ function VexHub:CreateUI()
         end
     end)
 
-    local gunfightESPButton = createButton("Toggle Gunfight ESP")
+    BABFarmButton.MouseButton1Click:Connect(function()
+        toggleBABFarm()
+        if VexHub.Settings.BABFarm then
+            BABFarmButton.Text = "Disable BAB Farm"
+        else
+            BABFarmButton.Text = "Toggle BAB Farm"
+        end
+    end)
+
     gunfightESPButton.MouseButton1Click:Connect(function()
         toggleGunfightESP()
         if VexHub.Settings.GunfightESP then
@@ -611,7 +819,6 @@ function VexHub:CreateUI()
         end
     end)
 
-    local teamCheckButton = createButton("Toggle Team Check")
     teamCheckButton.MouseButton1Click:Connect(function()
         toggleGunfightTeamCheck()
         if VexHub.Settings.GunfightTeamCheck then
@@ -621,7 +828,6 @@ function VexHub:CreateUI()
         end
     end)
 
-    local aimbotButton = createButton("Toggle Aimbot")
     aimbotButton.MouseButton1Click:Connect(function()
         if VexHub.Settings.Aimbot then
             VexHub.Settings.Aimbot = false
@@ -634,7 +840,6 @@ function VexHub:CreateUI()
         end
     end)
 
-    local increaseRangeButton = createButton("Toggle Increase Range")
     increaseRangeButton.MouseButton1Click:Connect(function()
         toggleIncreaseRange()
         if VexHub.Settings.IncreaseRange then
@@ -643,17 +848,6 @@ function VexHub:CreateUI()
             increaseRangeButton.Text = "Toggle Increase Range"
         end
     end)
-
-    local autoFarmButton = createButton("Toggle Auto Farm")
-    autoFarmButton.MouseButton1Click:Connect(function()
-        toggleAutoFarm()
-        if VexHub.Settings.AutoFarm then
-            autoFarmButton.Text = "Disable Auto Farm"
-        else
-            autoFarmButton.Text = "Toggle Auto Farm"
-        end
-    end)
-
 end
 
 -- Initialize UI
