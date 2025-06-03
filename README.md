@@ -190,15 +190,16 @@ MinimizedIcon.MouseButton1Click:Connect(function()
     MinimizedIcon.Visible = false
 end)
 
--- Aimbot function
+-- Aimbot function tailored for Unnamed Shooter game
 local function getClosestTarget()
     local closestPlayer = nil
     local shortestDistance = math.huge
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            -- Target Head or UpperTorso for Unnamed Shooter
+            local targetPart = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("UpperTorso")
+            if targetPart then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                 if onScreen then
                     local mousePos = Vector2.new(Mouse.X, Mouse.Y)
                     local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
@@ -213,7 +214,7 @@ local function getClosestTarget()
     return closestPlayer
 end
 
--- ESP Setup
+-- ESP Setup tailored for Unnamed Shooter game
 local espBoxes = {}
 
 local function createEspBox(player)
@@ -229,10 +230,10 @@ end
 local function updateEsp()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local head = player.Character:FindFirstChild("Head")
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if head and root then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+            -- Use UpperTorso or HumanoidRootPart for ESP box position
+            local targetPart = player.Character:FindFirstChild("UpperTorso") or player.Character:FindFirstChild("HumanoidRootPart")
+            if targetPart then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                 if onScreen then
                     local box = espBoxes[player]
                     if not box then
