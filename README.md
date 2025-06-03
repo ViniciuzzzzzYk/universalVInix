@@ -1,3 +1,8 @@
+-- Gunfight Simulator Hack Script for Roblox
+-- Features: Auto Farm, ESP, Aimbot with team detection, Wallhack (bullet penetration)
+-- GUI: Minimizable, movable, soft design
+-- WARNING: Use at your own risk. For educational purposes only.
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
