@@ -21,7 +21,19 @@ local NormalSpeed = 16 -- default Roblox walk speed
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HackMenuGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:GetService("CoreGui") -- fix for visibility in some exploit environments
+
+local CoreGui = game:GetService("CoreGui")
+local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+-- Try to parent to CoreGui, fallback to PlayerGui if fails
+local success, err = pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not success then
+    ScreenGui.Parent = PlayerGui
+end
+
+print("HackMenuGui parented to: ", ScreenGui.Parent.Name)
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
@@ -30,6 +42,7 @@ MainFrame.Size = UDim2.new(0, 250, 0, 320) -- smaller size
 MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
+MainFrame.ZIndex = 10
 MainFrame.Parent = ScreenGui
 MainFrame.Visible = true
 
