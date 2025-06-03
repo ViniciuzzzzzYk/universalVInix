@@ -26,12 +26,164 @@ ScreenGui.Parent = game.CoreGui
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 350)
-MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 250, 0, 320) -- smaller size
+MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 MainFrame.Visible = true
+
+-- Make GUI movable
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = "Universal Roblox Hack Menu"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 26
+Title.Parent = MainFrame
+
+-- Minimize Button
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 40, 0, 40)
+MinimizeButton.Position = UDim2.new(1, -45, 0, 0)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.new(1,1,1)
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.TextSize = 28
+MinimizeButton.Parent = MainFrame
+
+local MinimizedIcon = Instance.new("TextButton")
+MinimizedIcon.Name = "MinimizedIcon"
+MinimizedIcon.Size = UDim2.new(0, 50, 0, 50)
+MinimizedIcon.Position = UDim2.new(0, 10, 0, 10)
+MinimizedIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MinimizedIcon.Text = "☰"
+MinimizedIcon.TextColor3 = Color3.new(1,1,1)
+MinimizedIcon.Font = Enum.Font.SourceSansBold
+MinimizedIcon.TextSize = 30
+MinimizedIcon.Visible = false
+MinimizedIcon.Parent = ScreenGui
+
+local UICornerIcon = Instance.new("UICorner")
+UICornerIcon.CornerRadius = UDim.new(0, 12)
+UICornerIcon.Parent = MinimizedIcon
+
+-- Game Selection Dropdown
+local GameSelectionLabel = Instance.new("TextLabel")
+GameSelectionLabel.Text = "Select Game for Auto Farm"
+GameSelectionLabel.Size = UDim2.new(1, -20, 0, 30)
+GameSelectionLabel.Position = UDim2.new(0, 10, 0, 320)
+GameSelectionLabel.BackgroundTransparency = 1
+GameSelectionLabel.TextColor3 = Color3.new(1,1,1)
+GameSelectionLabel.Font = Enum.Font.SourceSans
+GameSelectionLabel.TextSize = 18
+GameSelectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+GameSelectionLabel.Parent = MainFrame
+
+local GameSelectionDropdown = Instance.new("TextButton")
+GameSelectionDropdown.Name = "GameSelectionDropdown"
+GameSelectionDropdown.Size = UDim2.new(1, -20, 0, 30)
+GameSelectionDropdown.Position = UDim2.new(0, 10, 0, 350)
+GameSelectionDropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+GameSelectionDropdown.TextColor3 = Color3.new(1,1,1)
+GameSelectionDropdown.Font = Enum.Font.SourceSans
+GameSelectionDropdown.TextSize = 18
+GameSelectionDropdown.Text = "Unnamed Shooter"
+GameSelectionDropdown.Parent = MainFrame
+
+local DropdownOpen = false
+local DropdownList = Instance.new("Frame")
+DropdownList.Size = UDim2.new(1, -20, 0, 100)
+DropdownList.Position = UDim2.new(0, 10, 0, 380)
+DropdownList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+DropdownList.Visible = false
+DropdownList.Parent = MainFrame
+
+local UICornerDropdown = Instance.new("UICorner")
+UICornerDropdown.CornerRadius = UDim.new(0, 8)
+UICornerDropdown.Parent = DropdownList
+
+local games = {"Unnamed Shooter", "Build A Boat For Treasure", "Other Game"}
+
+local function closeDropdown()
+    DropdownList.Visible = false
+    DropdownOpen = false
+end
+
+local function openDropdown()
+    DropdownList.Visible = true
+    DropdownOpen = true
+end
+
+GameSelectionDropdown.MouseButton1Click:Connect(function()
+    if DropdownOpen then
+        closeDropdown()
+    else
+        openDropdown()
+    end
+end)
+
+for i, gameName in ipairs(games) do
+    local option = Instance.new("TextButton")
+    option.Size = UDim2.new(1, 0, 0, 30)
+    option.Position = UDim2.new(0, 0, 0, (i-1)*30)
+    option.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    option.TextColor3 = Color3.new(1,1,1)
+    option.Font = Enum.Font.SourceSans
+    option.TextSize = 18
+    option.Text = gameName
+    option.Parent = DropdownList
+
+    option.MouseButton1Click:Connect(function()
+        GameSelectionDropdown.Text = gameName
+        closeDropdown()
+    end)
+end
 
 -- UI Corner for rounded edges
 local UICorner = Instance.new("UICorner")
@@ -206,13 +358,16 @@ MinimizedIcon.MouseButton1Click:Connect(function()
     MinimizedIcon.Visible = false
 end)
 
--- Aimbot function tailored for Unnamed Shooter game
+-- Aimbot function with team check and closest to crosshair targeting
 local function getClosestTarget()
     local closestPlayer = nil
     local shortestDistance = math.huge
+    local localTeam = nil
+    if LocalPlayer.Team then
+        localTeam = LocalPlayer.Team
+    end
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            -- Target Head or UpperTorso for Unnamed Shooter
+        if player ~= LocalPlayer and player.Team ~= localTeam and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
             local targetPart = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("UpperTorso")
             if targetPart then
                 local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
@@ -229,6 +384,56 @@ local function getClosestTarget()
     end
     return closestPlayer
 end
+=======
+-- Auto farm logic for Grow a Garden
+local function autoFarmGrowAGarden()
+    -- Placeholder implementation for Grow a Garden auto farm
+    -- This should be replaced with actual game-specific logic
+    print("Auto Farm: Running Grow a Garden auto farm logic")
+    -- Example: Automatically plant seeds, water plants, harvest crops, etc.
+    -- Use game-specific remote events or functions here
+end
+
+-- Main loop
+RunService.RenderStepped:Connect(function()
+    -- Aimbot
+    if AimbotEnabled then
+        local target = getClosestTarget()
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("UpperTorso")
+            if targetPart then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+            end
+        end
+    end
+
+    -- Speed Boost
+    if SpeedBoostEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedBoostValue
+    end
+
+    -- ESP
+    updateEsp()
+
+    -- Auto Farm: automatically fire at closest target if enabled
+    if AutoFarmEnabled then
+        local selectedGame = GameSelectionDropdown.Text
+        if selectedGame == "Unnamed Shooter" and AimbotEnabled then
+            local target = getClosestTarget()
+            if target and target.Character then
+                -- Simulate firing at target
+                print("Auto Farm: Firing at target " .. target.Name)
+                -- TODO: Implement actual firing logic based on game specifics
+            end
+        elseif selectedGame == "Grow a Garden" then
+            autoFarmGrowAGarden()
+        elseif selectedGame == "Build A Boat For Treasure" then
+            -- TODO: Implement Build A Boat For Treasure auto farm logic
+        else
+            -- Other games or no auto farm
+        end
+    end
+end)
 
 -- ESP Setup tailored for Unnamed Shooter game
 local espBoxes = {}
