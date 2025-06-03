@@ -139,7 +139,7 @@ RunService.RenderStepped:Connect(function()
         local target = getClosestTarget()
         if target and target.Character then
             local targetPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("UpperTorso")
-            if targetPart then
+            if targetPart and canShootThroughWalls(targetPart.Position) then
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
             end
         end
@@ -148,6 +148,16 @@ RunService.RenderStepped:Connect(function()
     -- ESP
     if ESPEnabled then
         updateEsp()
+    end
+
+    -- Auto Dodge
+    if AutoDodgeEnabled then
+        autoDodge()
+    end
+
+    -- Auto Teleport (high ban risk)
+    if AutoTeleportEnabled then
+        autoTeleportOnPlayer()
     end
 
     -- Auto Farm
