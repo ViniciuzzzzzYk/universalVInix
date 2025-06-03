@@ -23,14 +23,14 @@ ScreenGui.Name = "HackMenuGui"
 ScreenGui.ResetOnSpawn = false
 
 local CoreGui = game:GetService("CoreGui")
-local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
--- Try to parent to CoreGui, fallback to PlayerGui if fails
+-- Force parent to CoreGui for exploit executors like KRNL, Delta, etc.
 local success, err = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
+
 if not success then
-    ScreenGui.Parent = PlayerGui
+    error("Failed to parent HackMenuGui to CoreGui: "..tostring(err))
 end
 
 print("HackMenuGui parented to: ", ScreenGui.Parent.Name)
