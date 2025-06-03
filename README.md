@@ -12,6 +12,8 @@ local Camera = workspace.CurrentCamera
 local AimbotEnabled = false
 local ESPEnabled = false
 local SpeedBoostEnabled = false
+local WallhackEnabled = false -- new toggle for bullet penetration
+local AutoFarmEnabled = false -- new toggle for auto farm
 local SpeedBoostValue = 50 -- default walk speed when speed boost is enabled
 local NormalSpeed = 16 -- default Roblox walk speed
 
@@ -109,12 +111,14 @@ end
 local aimbotToggle = createToggle("Aimbot", UDim2.new(0, 10, 0, 60), AimbotEnabled)
 local espToggle = createToggle("ESP", UDim2.new(0, 10, 0, 110), ESPEnabled)
 local speedToggle = createToggle("Speed Boost", UDim2.new(0, 10, 0, 160), SpeedBoostEnabled)
+local wallhackToggle = createToggle("Wallhack", UDim2.new(0, 10, 0, 210), WallhackEnabled)
+local autoFarmToggle = createToggle("Auto Farm", UDim2.new(0, 10, 0, 260), AutoFarmEnabled)
 
 -- Speed Slider
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Text = "Speed Value"
 speedLabel.Size = UDim2.new(0, 100, 0, 30)
-speedLabel.Position = UDim2.new(0, 10, 0, 210)
+speedLabel.Position = UDim2.new(0, 10, 0, 310)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextColor3 = Color3.new(1,1,1)
 speedLabel.Font = Enum.Font.SourceSans
@@ -124,7 +128,7 @@ speedLabel.Parent = MainFrame
 local speedValueLabel = Instance.new("TextLabel")
 speedValueLabel.Text = tostring(SpeedBoostValue)
 speedValueLabel.Size = UDim2.new(0, 40, 0, 30)
-speedValueLabel.Position = UDim2.new(0, 120, 0, 210)
+speedValueLabel.Position = UDim2.new(0, 120, 0, 310)
 speedValueLabel.BackgroundTransparency = 1
 speedValueLabel.TextColor3 = Color3.new(1,1,1)
 speedValueLabel.Font = Enum.Font.SourceSansBold
@@ -133,7 +137,7 @@ speedValueLabel.Parent = MainFrame
 
 local speedSlider = Instance.new("TextBox")
 speedSlider.Size = UDim2.new(0, 100, 0, 30)
-speedSlider.Position = UDim2.new(0, 170, 0, 210)
+speedSlider.Position = UDim2.new(0, 170, 0, 310)
 speedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 speedSlider.TextColor3 = Color3.new(1,1,1)
 speedSlider.Font = Enum.Font.SourceSans
@@ -164,6 +168,18 @@ speedToggle.MouseButton1Click:Connect(function()
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = NormalSpeed
         end
     end
+end)
+
+wallhackToggle.MouseButton1Click:Connect(function()
+    WallhackEnabled = not WallhackEnabled
+    wallhackToggle.BackgroundColor3 = WallhackEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    wallhackToggle.Text = WallhackEnabled and "ON" or "OFF"
+end)
+
+autoFarmToggle.MouseButton1Click:Connect(function()
+    AutoFarmEnabled = not AutoFarmEnabled
+    autoFarmToggle.BackgroundColor3 = AutoFarmEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    autoFarmToggle.Text = AutoFarmEnabled and "ON" or "OFF"
 end)
 
 speedSlider.FocusLost:Connect(function(enterPressed)
@@ -259,9 +275,11 @@ RunService.RenderStepped:Connect(function()
     -- Aimbot
     if AimbotEnabled then
         local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPos = target.Character.Head.Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, headPos)
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("UpperTorso")
+            if targetPart then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+            end
         end
     end
 
@@ -272,6 +290,19 @@ RunService.RenderStepped:Connect(function()
 
     -- ESP
     updateEsp()
+
+    -- Auto Farm: automatically fire at closest target if enabled
+    if AutoFarmEnabled and AimbotEnabled then
+        local target = getClosestTarget()
+        if target and target.Character then
+            -- Simulate firing at target
+            -- This part depends on the game's shooting implementation
+            -- For Unnamed Shooter, we can try to fire a remote event or simulate mouse click
+            -- Here we just print for demonstration
+            print("Auto Farm: Firing at target " .. target.Name)
+            -- TODO: Implement actual firing logic based on game specifics
+        end
+    end
 end)
 
 -- Responsive GUI scaling
