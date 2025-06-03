@@ -13,6 +13,8 @@ local AimbotEnabled = true
 local ESPEnabled = true
 local AutoFarmEnabled = true
 local WallhackEnabled = true
+local AutoDodgeEnabled = true -- new toggle for auto dodging
+local AutoTeleportEnabled = false -- new toggle for teleporting on players (high ban risk)
 local SpeedBoostValue = 16
 local NormalSpeed = 16
 
@@ -83,6 +85,51 @@ end
 local function autoFarm()
     -- Implement game-specific auto farm logic here
     print("Auto Farm: Running auto farm logic")
+end
+
+-- Function to simulate bullet penetration (wallhack)
+local function canShootThroughWalls(targetPosition)
+    -- Simplified: always return true to simulate bullet penetration
+    -- For more advanced, raycast ignoring walls can be implemented
+    return true
+end
+
+-- Function to dodge incoming projectiles
+local function autoDodge()
+    local Character = LocalPlayer.Character
+    if not Character then return end
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not HumanoidRootPart then return end
+
+    for _, projectile in pairs(workspace:GetChildren()) do
+        if projectile.Name == "Bullet" or projectile.Name == "Projectile" then
+            if projectile:IsA("BasePart") then
+                local distance = (projectile.Position - HumanoidRootPart.Position).Magnitude
+                if distance < 20 then -- dodge if projectile is close
+                    -- Move character perpendicular to projectile velocity
+                    local velocity = projectile.Velocity
+                    local dodgeDirection = Vector3.new(-velocity.Z, 0, velocity.X).Unit
+                    local dodgePosition = HumanoidRootPart.Position + dodgeDirection * 10
+                    HumanoidRootPart.CFrame = CFrame.new(dodgePosition)
+                    break
+                end
+            end
+        end
+    end
+end
+
+-- Function to teleport on top of closest player (high ban risk)
+local function autoTeleportOnPlayer()
+    local target = getClosestTarget()
+    if target and target.Character then
+        local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("UpperTorso")
+        if targetPart then
+            local Character = LocalPlayer.Character
+            if Character and Character:FindFirstChild("HumanoidRootPart") then
+                Character.HumanoidRootPart.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
+            end
+        end
+    end
 end
 
 -- Main loop
