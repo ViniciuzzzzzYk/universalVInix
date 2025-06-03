@@ -21,7 +21,7 @@ local NormalSpeed = 16 -- default Roblox walk speed
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HackMenuGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Parent = game:GetService("CoreGui") -- fix for visibility in some exploit environments
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
@@ -32,6 +32,32 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 MainFrame.Visible = true
+
+-- Aimbot toggle button on screen corner
+local AimbotToggleButton = Instance.new("TextButton")
+AimbotToggleButton.Name = "AimbotToggleButton"
+AimbotToggleButton.Size = UDim2.new(0, 40, 0, 40)
+AimbotToggleButton.Position = UDim2.new(1, -50, 0.5, -20)
+AimbotToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AimbotToggleButton.TextColor3 = Color3.new(1,1,1)
+AimbotToggleButton.Font = Enum.Font.SourceSansBold
+AimbotToggleButton.TextSize = 18
+AimbotToggleButton.Text = "Aim ON"
+AimbotToggleButton.Parent = ScreenGui
+AimbotToggleButton.ZIndex = 10
+
+AimbotToggleButton.MouseButton1Click:Connect(function()
+    AimbotEnabled = not AimbotEnabled
+    if AimbotEnabled then
+        AimbotToggleButton.Text = "Aim ON"
+        aimbotToggle.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        aimbotToggle.Text = "ON"
+    else
+        AimbotToggleButton.Text = "Aim OFF"
+        aimbotToggle.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+        aimbotToggle.Text = "OFF"
+    end
+end)
 
 -- Make GUI movable
 local dragging = false
@@ -387,11 +413,93 @@ end
 =======
 -- Auto farm logic for Grow a Garden
 local function autoFarmGrowAGarden()
-    -- Placeholder implementation for Grow a Garden auto farm
-    -- This should be replaced with actual game-specific logic
+    -- Example implementation for Grow a Garden auto farm
     print("Auto Farm: Running Grow a Garden auto farm logic")
-    -- Example: Automatically plant seeds, water plants, harvest crops, etc.
-    -- Use game-specific remote events or functions here
+
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+
+    -- Example remote events (replace with actual game remotes)
+    local PlantSeedEvent = ReplicatedStorage:FindFirstChild("PlantSeed")
+    local WaterPlantEvent = ReplicatedStorage:FindFirstChild("WaterPlant")
+    local HarvestPlantEvent = ReplicatedStorage:FindFirstChild("HarvestPlant")
+    local SellCropsEvent = ReplicatedStorage:FindFirstChild("SellCrops")
+
+    -- Plant seeds logic
+    if PlantSeedEvent then
+        -- Logic to plant best seeds at available spots
+        -- This is a placeholder, actual implementation depends on game specifics
+        PlantSeedEvent:FireServer("BestSeedType", Vector3.new(0,0,0))
+    end
+
+    -- Water plants logic
+    if WaterPlantEvent then
+        -- Use raycast to detect dry soil and water
+        WaterPlantEvent:FireServer()
+    end
+
+    -- Harvest plants logic
+    if HarvestPlantEvent then
+        -- Harvest mature plants with delay
+        HarvestPlantEvent:FireServer()
+    end
+
+    -- Sell crops logic
+    if SellCropsEvent then
+        SellCropsEvent:FireServer()
+    end
+end
+
+-- Auto farm logic for Build A Boat For Treasure
+local function autoFarmBuildABoat()
+    print("Auto Farm: Running Build A Boat For Treasure auto farm logic")
+
+    local PathfindingService = game:GetService("PathfindingService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Character = LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+
+    if not Character or not Humanoid then return end
+
+    -- Example target positions (replace with actual game positions)
+    local resourcePositions = {
+        Vector3.new(0,0,0),
+        Vector3.new(10,0,10),
+        Vector3.new(20,0,20),
+    }
+
+    for _, pos in ipairs(resourcePositions) do
+        local path = PathfindingService:CreatePath()
+        path:ComputeAsync(Character.HumanoidRootPart.Position, pos)
+        if path.Status == Enum.PathStatus.Success then
+            local waypoints = path:GetWaypoints()
+            for _, waypoint in ipairs(waypoints) do
+                Humanoid:MoveTo(waypoint.Position)
+                Humanoid.MoveToFinished:Wait()
+                wait(math.random(0.2, 1.5)) -- random delay to avoid detection
+            end
+            -- Simulate click to collect resource
+            -- This is a placeholder, actual implementation depends on game specifics
+            print("Collected resource at ", pos)
+        end
+    end
+
+    -- Anti-AFK: subtle movements
+    if tick() % 60 < 1 then
+        Humanoid.Jump = true
+        wait(0.1)
+        Humanoid.Jump = false
+    end
+end
+
+-- Auto farm logic for Gunfight Arena
+local function autoFarmGunfightArena()
+    print("Auto Farm: Running Gunfight Arena auto farm logic")
+
+    -- Placeholder for Gunfight Arena auto farm
+    -- Implement game-specific logic here
 end
 
 -- Main loop
@@ -428,7 +536,9 @@ RunService.RenderStepped:Connect(function()
         elseif selectedGame == "Grow a Garden" then
             autoFarmGrowAGarden()
         elseif selectedGame == "Build A Boat For Treasure" then
-            -- TODO: Implement Build A Boat For Treasure auto farm logic
+            autoFarmBuildABoat()
+        elseif selectedGame == "Gunfight Arena" then
+            autoFarmGunfightArena()
         else
             -- Other games or no auto farm
         end
