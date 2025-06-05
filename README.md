@@ -65,6 +65,7 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 MainFrame.BackgroundTransparency = 0.2
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui  -- Fix: Parent MainFrame to ScreenGui
 
 -- Efeito de borda
 local UICorner = Instance.new("UICorner")
@@ -311,14 +312,9 @@ local function DragGUI(input)
     
     -- Limita a janela à área da tela
     local viewportSize = workspace.CurrentCamera.ViewportSize
-    newPos = UDim2.new(
-        math.clamp(newPos.X.Scale, 0, 1 - newPos.X.Offset/viewportSize.X),
-        math.clamp(newPos.X.Offset, 0, viewportSize.X - newPos.X.Offset),
-        math.clamp(newPos.Y.Scale, 0, 1 - newPos.Y.Offset/viewportSize.Y),
-        math.clamp(newPos.Y.Offset, 0, viewportSize.Y - newPos.Y.Offset)
-    )
-    
-    MainFrame.Position = newPos
+    local newX = math.clamp(newPos.X.Offset, 0, viewportSize.X - MainFrame.AbsoluteSize.X)
+    local newY = math.clamp(newPos.Y.Offset, 0, viewportSize.Y - MainFrame.AbsoluteSize.Y)
+    MainFrame.Position = UDim2.new(0, newX, 0, newY)
 end
 
 TitleBar.InputBegan:Connect(function(input)
@@ -512,51 +508,3 @@ spawn(function()
     while GUIEnabled do
         if Settings.Aimbot.Enabled then
             AimbotThread()
-        end
-        wait(0.1)
-    end
-end)
-
-spawn(function()
-    while GUIEnabled do
-        if Settings.AutoFarm.Enabled then
-            AutoFarmThread()
-        end
-        wait(0.1)
-    end
-end)
-
--- Loop principal
-RunService.Heartbeat:Connect(function()
-    if not GUIEnabled then return end
-    
-    if Settings.ESP.Enabled then UpdateESP() end
-    if Settings.Hitbox.Enabled then UpdateHitboxes() end
-end)
-
--- Notificação inicial
-local Notification = Instance.new("TextLabel")
-Notification.Name = "StartNotification"
-Notification.Size = UDim2.new(0, 200, 0, 50)
-Notification.Position = UDim2.new(0.5, -100, 1, -100)
-Notification.AnchorPoint = Vector2.new(0.5, 0.5)
-Notification.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-Notification.BackgroundTransparency = 0.3
-Notification.Text = "GF Arena Mobile v2.0 Carregado!"
-Notification.TextColor3 = Color3.fromRGB(255, 255, 255)
-Notification.TextSize = 14
-Notification.Font = Enum.Font.GothamBold
-Notification.Parent = ScreenGui
-
--- Animação da notificação
-spawn(function()
-    wait(3)
-    local tween = TweenService:Create(
-        Notification,
-        TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {Position = UDim2.new(0.5, -100, 1, -150), BackgroundTransparency = 1, TextTransparency = 1}
-    )
-    tween:Play()
-    tween.Completed:Wait()
-    Notification:Destroy()
-end)
