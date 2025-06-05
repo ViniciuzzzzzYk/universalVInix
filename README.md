@@ -1,48 +1,136 @@
--- Gunfight Simulator Auto Script (No GUI)
--- Features: Auto Farm, ESP, Aimbot with team detection, automatic operation
--- WARNING: Use at your own risk. For educational purposes only.
+-- Vex Hub for Roblox Gunfight Arena
+-- Functional, mobile-friendly GUI with toggles for ESP, Hitbox, Aimbot, Bullet Penetration, Auto Farm
 
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
 
--- Settings
-local AimbotEnabled = true
-local ESPEnabled = true
-local AutoFarmEnabled = true
-local WallhackEnabled = true
-local AutoDodgeEnabled = true -- new toggle for auto dodging
-local AutoTeleportEnabled = false -- new toggle for teleporting on players (high ban risk)
-local SpeedBoostValue = 16
-local NormalSpeed = 16
+-- Variables
+local VexHub = {}
+VexHub.Enabled = true
+VexHub.ESPEnabled = false
+VexHub.HitboxEnabled = false
+VexHub.AimbotEnabled = false
+VexHub.BulletPenetrationEnabled = false
+VexHub.AutoFarmEnabled = false
 
--- Aimbot with team detection and closest to crosshair targeting
-local function getClosestTarget()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    local localTeam = LocalPlayer.Team
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team ~= localTeam and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local targetPart = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("UpperTorso")
-            if targetPart then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-                if onScreen then
-                    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        closestPlayer = player
-                    end
-                end
-            end
-        end
-    end
-    return closestPlayer
+-- GUI Creation
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VexHubGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Parent = ScreenGui
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.BorderSizePixel = 0
+Title.Text = "Vex Hub - Gunfight Arena"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 20
+Title.Parent = MainFrame
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -30, 0, 0)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.new(1, 1, 1)
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.TextSize = 24
+MinimizeButton.Parent = MainFrame
+
+local function createToggle(name, position)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -20, 0, 40)
+    frame.Position = position
+    frame.BackgroundTransparency = 1
+    frame.Parent = MainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 18
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 50, 0, 25)
+    toggle.Position = UDim2.new(0.75, 0, 0.25, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    toggle.BorderSizePixel = 0
+    toggle.Text = "OFF"
+    toggle.TextColor3 = Color3.new(1, 1, 1)
+    toggle.Font = Enum.Font.SourceSansBold
+    toggle.TextSize = 18
+    toggle.Parent = frame
+
+    return toggle
 end
 
--- ESP Setup
+local ESPToggle = createToggle("ESP", UDim2.new(0, 10, 0, 40))
+local HitboxToggle = createToggle("Hitbox", UDim2.new(0, 10, 0, 80))
+local AimbotToggle = createToggle("Aimbot", UDim2.new(0, 10, 0, 120))
+local BulletPenToggle = createToggle("Bullet Penetration", UDim2.new(0, 10, 0, 160))
+local AutoFarmToggle = createToggle("Auto Farm", UDim2.new(0, 10, 0, 200))
+
+-- Minimize/Open functionality
+local minimized = false
+MinimizeButton.MouseButton1Click:Connect(function()
+    if minimized then
+        MainFrame.Size = UDim2.new(0, 250, 0, 300)
+        for _, child in pairs(MainFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child.Visible = true
+            end
+        end
+        Title.Text = "Vex Hub - Gunfight Arena"
+        minimized = false
+    else
+        MainFrame.Size = UDim2.new(0, 250, 0, 30)
+        for _, child in pairs(MainFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child.Visible = false
+            end
+        end
+        Title.Text = "Vex Hub (Minimized)"
+        minimized = true
+    end
+end)
+
+-- Toggle button helper
+local function toggleButton(button, state)
+    if state then
+        button.Text = "ON"
+        button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        button.Text = "OFF"
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end
+end
+
+-- ESP Implementation
 local espBoxes = {}
 
 local function createEspBox(player)
@@ -50,30 +138,26 @@ local function createEspBox(player)
     box.Visible = false
     box.Color = Color3.new(1, 0, 0)
     box.Thickness = 2
-    box.Transparency = 1
     box.Filled = false
     return box
 end
 
 local function updateEsp()
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local targetPart = player.Character:FindFirstChild("UpperTorso") or player.Character:FindFirstChild("HumanoidRootPart")
-            if targetPart then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-                if onScreen then
-                    local box = espBoxes[player]
-                    if not box then
-                        box = createEspBox(player)
-                        espBoxes[player] = box
-                    end
-                    local size = 50
-                    box.Position = Vector2.new(screenPos.X - size/2, screenPos.Y - size/2)
-                    box.Size = Vector2.new(size, size)
-                    box.Visible = ESPEnabled
-                elseif espBoxes[player] then
-                    espBoxes[player].Visible = false
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local rootPart = player.Character.HumanoidRootPart
+            local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                if not espBoxes[player] then
+                    espBoxes[player] = createEspBox(player)
                 end
+                local box = espBoxes[player]
+                local size = 100 / pos.Z
+                box.Size = size
+                box.Position = Vector2.new(pos.X - size / 2, pos.Y - size / 2)
+                box.Visible = VexHub.ESPEnabled
+            elseif espBoxes[player] then
+                espBoxes[player].Visible = false
             end
         elseif espBoxes[player] then
             espBoxes[player].Visible = false
@@ -81,89 +165,139 @@ local function updateEsp()
     end
 end
 
--- Auto farm logic placeholder
-local function autoFarm()
-    -- Implement game-specific auto farm logic here
-    print("Auto Farm: Running auto farm logic")
-end
+-- Hitbox Enlargement
+local originalSizes = {}
 
--- Function to simulate bullet penetration (wallhack)
-local function canShootThroughWalls(targetPosition)
-    -- Simplified: always return true to simulate bullet penetration
-    -- For more advanced, raycast ignoring walls can be implemented
-    return true
-end
-
--- Function to dodge incoming projectiles
-local function autoDodge()
-    local Character = LocalPlayer.Character
-    if not Character then return end
-    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
-    if not HumanoidRootPart then return end
-
-    for _, projectile in pairs(workspace:GetChildren()) do
-        if projectile.Name == "Bullet" or projectile.Name == "Projectile" then
-            if projectile:IsA("BasePart") then
-                local distance = (projectile.Position - HumanoidRootPart.Position).Magnitude
-                if distance < 20 then -- dodge if projectile is close
-                    -- Move character perpendicular to projectile velocity
-                    local velocity = projectile.Velocity
-                    local dodgeDirection = Vector3.new(-velocity.Z, 0, velocity.X).Unit
-                    local dodgePosition = HumanoidRootPart.Position + dodgeDirection * 10
-                    HumanoidRootPart.CFrame = CFrame.new(dodgePosition)
-                    break
+local function setHitbox(enabled)
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            if enabled then
+                if not originalSizes[player] then
+                    originalSizes[player] = rootPart.Size
+                end
+                rootPart.Size = Vector3.new(10, 10, 10)
+                rootPart.Transparency = 0.5
+                rootPart.CanCollide = false
+            else
+                if originalSizes[player] then
+                    rootPart.Size = originalSizes[player]
+                    rootPart.Transparency = 1
+                    rootPart.CanCollide = true
+                    originalSizes[player] = nil
                 end
             end
         end
     end
 end
 
--- Function to teleport on top of closest player (high ban risk)
-local function autoTeleportOnPlayer()
-    local target = getClosestTarget()
-    if target and target.Character then
-        local targetPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("UpperTorso")
-        if targetPart then
-            local Character = LocalPlayer.Character
-            if Character and Character:FindFirstChild("HumanoidRootPart") then
-                Character.HumanoidRootPart.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
+-- Aimbot Implementation
+local function getNearestEnemy()
+    local nearestPlayer = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local rootPart = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    nearestPlayer = player
+                end
             end
         end
+    end
+    return nearestPlayer
+end
+
+local function aimAt(target)
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local headPos = target.Character.Head.Position
+        local cameraCFrame = Camera.CFrame
+        local direction = (headPos - cameraCFrame.Position).Unit
+        Camera.CFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + direction)
     end
 end
 
+-- Bullet Penetration (Simulated by ignoring walls in raycast)
+local function modifyBulletPenetration()
+    -- This is highly dependent on the game's bullet implementation.
+    -- As a placeholder, we simulate by ignoring walls in raycasts or modifying bullet scripts.
+    -- This requires game-specific knowledge and may not be fully functional without game internals.
+end
+
+-- Auto Farm Implementation
+local function autoFarm()
+    if not VexHub.AutoFarmEnabled then return end
+    local target = getNearestEnemy()
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        -- Aim at target
+        aimAt(target)
+        -- Simulate shooting (depends on game, placeholder)
+        -- For example, fire a remote event or tool activation
+        -- This part requires game-specific implementation
+    end
+end
+
+-- Connect toggles
+ESPToggle.MouseButton1Click:Connect(function()
+    VexHub.ESPEnabled = not VexHub.ESPEnabled
+    toggleButton(ESPToggle, VexHub.ESPEnabled)
+end)
+
+HitboxToggle.MouseButton1Click:Connect(function()
+    VexHub.HitboxEnabled = not VexHub.HitboxEnabled
+    toggleButton(HitboxToggle, VexHub.HitboxEnabled)
+    setHitbox(VexHub.HitboxEnabled)
+end)
+
+AimbotToggle.MouseButton1Click:Connect(function()
+    VexHub.AimbotEnabled = not VexHub.AimbotEnabled
+    toggleButton(AimbotToggle, VexHub.AimbotEnabled)
+end)
+
+BulletPenToggle.MouseButton1Click:Connect(function()
+    VexHub.BulletPenetrationEnabled = not VexHub.BulletPenetrationEnabled
+    toggleButton(BulletPenToggle, VexHub.BulletPenetrationEnabled)
+    if VexHub.BulletPenetrationEnabled then
+        modifyBulletPenetration()
+    end
+end)
+
+AutoFarmToggle.MouseButton1Click:Connect(function()
+    VexHub.AutoFarmEnabled = not VexHub.AutoFarmEnabled
+    toggleButton(AutoFarmToggle, VexHub.AutoFarmEnabled)
+end)
+
 -- Main loop
 RunService.RenderStepped:Connect(function()
-    -- Aimbot
-    if AimbotEnabled then
-        local target = getClosestTarget()
-        if target and target.Character then
-            local targetPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("UpperTorso")
-            if targetPart and canShootThroughWalls(targetPart.Position) then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
-            end
+    if VexHub.ESPEnabled then
+        updateEsp()
+    else
+        for _, box in pairs(espBoxes) do
+            box.Visible = false
         end
     end
 
-    -- ESP
-    if ESPEnabled then
-        updateEsp()
+    if VexHub.AimbotEnabled then
+        local target = getNearestEnemy()
+        if target then
+            aimAt(target)
+        end
     end
 
-    -- Auto Dodge
-    if AutoDodgeEnabled then
-        autoDodge()
-    end
-
-    -- Auto Teleport (high ban risk)
-    if AutoTeleportEnabled then
-        autoTeleportOnPlayer()
-    end
-
-    -- Auto Farm
-    if AutoFarmEnabled then
+    if VexHub.AutoFarmEnabled then
         autoFarm()
     end
 end)
 
-print("Gunfight Simulator Auto Script loaded.")
+-- Initialize toggles to OFF
+toggleButton(ESPToggle, false)
+toggleButton(HitboxToggle, false)
+toggleButton(AimbotToggle, false)
+toggleButton(BulletPenToggle, false)
+toggleButton(AutoFarmToggle, false)
+
+print("Vex Hub loaded. Use the GUI to toggle features.")
