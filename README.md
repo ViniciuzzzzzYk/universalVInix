@@ -1,355 +1,274 @@
--- Vex Hub for Roblox Gunfight Arena
--- Functional, mobile-friendly GUI with toggles for ESP, Hitbox, Aimbot, Bullet Penetration, Auto Farm
+--[[
+  Gunfight Arena Mobile Exploit
+  Versão: 1.2
+  Otimizado para mobile (Delta, Hydrogen, Fluxus)
+  Features: ESP, Hitbox Expander, Aimbot, AutoFarm
+]]
 
--- Services
+-- Verifica se o jogo carregou
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- Biblioteca UI otimizada para mobile
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+
+-- Cria a janela principal
+local Window = Rayfield:CreateWindow({
+    Name = "GF Arena Mobile",
+    LoadingTitle = "Carregando exploit...",
+    LoadingSubtitle = "by Test Scripts",
+    ConfigurationSaving = { Enabled = false },
+    Discord = { Enabled = false }
+})
+
+-- Serviços
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
--- Variables
-local VexHub = {}
-VexHub.Enabled = true
-VexHub.ESPEnabled = false
-VexHub.HitboxEnabled = false
-VexHub.AimbotEnabled = false
-VexHub.BulletPenetrationEnabled = false
-VexHub.AutoFarmEnabled = false
+-- Configurações
+local Settings = {
+    ESP = {
+        Enabled = false,
+        Color = Color3.fromRGB(255, 50, 50),
+        TeamCheck = true
+    },
+    Hitbox = {
+        Enabled = false,
+        Size = Vector3.new(5, 5, 5)
+    },
+    Aimbot = {
+        Enabled = false,
+        Smoothness = 0.1,
+        FOV = 100,
+        TeamCheck = true
+    },
+    AutoFarm = {
+        Enabled = false,
+        Delay = 1
+    }
+}
 
--- GUI Creation
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "VexHubGui"
-ScreenGui.ResetOnSpawn = false
--- Parent to PlayerGui for better compatibility
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- Tabelas de armazenamento
+local ESPInstances = {}
+local Hitboxes = {}
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Parent = ScreenGui
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.ClipsDescendants = true
-
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.BorderSizePixel = 0
-Title.Text = "Vex Hub - Gunfight Arena"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 20
-Title.Parent = MainFrame
-
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -30, 0, 0)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Text = "-"
-MinimizeButton.TextColor3 = Color3.new(1, 1, 1)
-MinimizeButton.Font = Enum.Font.SourceSansBold
-MinimizeButton.TextSize = 24
-MinimizeButton.Parent = MainFrame
-
-local function createToggle(name, position)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.Position = position
-    frame.BackgroundTransparency = 1
-    frame.Parent = MainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 18
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 50, 0, 25)
-    toggle.Position = UDim2.new(0.75, 0, 0.25, 0)
-    toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    toggle.BorderSizePixel = 0
-    toggle.Text = "OFF"
-    toggle.TextColor3 = Color3.new(1, 1, 1)
-    toggle.Font = Enum.Font.SourceSansBold
-    toggle.TextSize = 18
-    toggle.Parent = frame
-
-    return toggle
-end
-
-local ESPToggle = createToggle("ESP", UDim2.new(0, 10, 0, 40))
-local HitboxToggle = createToggle("Hitbox", UDim2.new(0, 10, 0, 80))
-local AimbotToggle = createToggle("Aimbot", UDim2.new(0, 10, 0, 120))
-local BulletPenToggle = createToggle("Bullet Penetration", UDim2.new(0, 10, 0, 160))
-local AutoFarmToggle = createToggle("Auto Farm", UDim2.new(0, 10, 0, 200))
-
--- Minimize/Open functionality
-local minimized = false
-MinimizeButton.MouseButton1Click:Connect(function()
-    if minimized then
-        MainFrame.Size = UDim2.new(0, 250, 0, 300)
-        for _, child in pairs(MainFrame:GetChildren()) do
-            -- Show all except MinimizeButton and Title
-            if child ~= MinimizeButton and child ~= Title then
-                child.Visible = true
-            end
-        end
-        Title.Text = "Vex Hub - Gunfight Arena"
-        minimized = false
-    else
-        MainFrame.Size = UDim2.new(0, 250, 0, 30)
-        for _, child in pairs(MainFrame:GetChildren()) do
-            -- Hide all except MinimizeButton and Title
-            if child ~= MinimizeButton and child ~= Title then
-                child.Visible = false
-            end
-        end
-        Title.Text = "Vex Hub (Minimized)"
-        minimized = true
-    end
-end)
-
--- Toggle button helper
-local function toggleButton(button, state)
-    if state then
-        button.Text = "ON"
-        button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-    else
-        button.Text = "OFF"
-        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    end
-end
-
--- ESP Implementation using BillboardGui for better compatibility
-local espTags = {}
-
-local function createEspTag(player)
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "VexHubESP"
-    billboard.Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    billboard.Size = UDim2.new(4, 0, 4, 0)
-    billboard.AlwaysOnTop = true
-    billboard.LightInfluence = 0
-    billboard.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart") or nil
-
-    local frame = Instance.new("Frame")
-    frame.BackgroundColor3 = Color3.new(1, 0, 0)
-    frame.BorderSizePixel = 0
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundTransparency = 0.5
-    frame.Parent = billboard
-
-    return billboard
-end
-
-local function updateEsp()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                if not espTags[player] then
-                    espTags[player] = createEspTag(player)
-                else
-                    espTags[player].Adornee = player.Character.HumanoidRootPart
-                    espTags[player].Parent = player.Character.HumanoidRootPart
-                end
-                espTags[player].Enabled = VexHub.ESPEnabled
-            elseif espTags[player] then
-                espTags[player].Enabled = false
-            end
-        elseif espTags[player] then
-            espTags[player].Enabled = false
-        end
-    end
-end
-
--- Hitbox Enlargement
-local originalSizes = {}
-
-local function setHitbox(enabled)
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = player.Character.HumanoidRootPart
-                if enabled then
-                    if not originalSizes[player] then
-                        originalSizes[player] = rootPart.Size
-                    end
-                    rootPart.Size = Vector3.new(10, 10, 10)
-                    rootPart.Transparency = 0.5
-                    rootPart.CanCollide = false
-                else
-                    if originalSizes[player] then
-                        rootPart.Size = originalSizes[player]
-                        rootPart.Transparency = 1
-                        rootPart.CanCollide = true
-                        originalSizes[player] = nil
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Aimbot Implementation
-local function getNearestEnemy()
-    local nearestPlayer = nil
-    local shortestDistance = math.huge
-    local mousePos = UserInputService:GetMouseLocation()
-    for _, player in pairs(Players:GetPlayers()) do
+-- Função para criar ESP
+local function UpdateESP()
+    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local success, err = pcall(function()
-                -- Fix team detection: check if player.Team is not equal to LocalPlayer.Team
-                if player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                        local rootPart = player.Character.HumanoidRootPart
-                        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-                        if onScreen then
-                            local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                            if dist < shortestDistance then
-                                shortestDistance = dist
-                                nearestPlayer = player
-                            end
+            local character = player.Character
+            if character then
+                if Settings.ESP.Enabled then
+                    if not ESPInstances[player] then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = player.Name.."_ESP"
+                        highlight.FillColor = Settings.ESP.Color
+                        highlight.OutlineColor = Settings.ESP.Color
+                        highlight.FillTransparency = 0.5
+                        highlight.Parent = character
+                        ESPInstances[player] = highlight
+                    end
+                    ESPInstances[player].Adornee = character
+                    ESPInstances[player].Parent = character
+                else
+                    if ESPInstances[player] then
+                        ESPInstances[player]:Destroy()
+                        ESPInstances[player] = nil
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Função para Hitbox Expander
+local function UpdateHitboxes()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local character = player.Character
+            if character then
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    if Settings.Hitbox.Enabled then
+                        humanoidRootPart.Size = Settings.Hitbox.Size
+                        humanoidRootPart.Transparency = 0.7
+                        humanoidRootPart.CanCollide = false
+                        Hitboxes[player] = true
+                    else
+                        if Hitboxes[player] then
+                            humanoidRootPart.Size = Vector3.new(2, 2, 1)
+                            humanoidRootPart.Transparency = 0
+                            Hitboxes[player] = nil
                         end
                     end
                 end
-            end)
-            if not success then
-                game.StarterGui:SetCore("SendNotification", {
-                    Title = "Vex Hub Error";
-                    Text = "Error in getNearestEnemy: "..tostring(err);
-                    Duration = 5;
-                })
             end
         end
     end
-    return nearestPlayer
 end
 
-local function aimAt(target)
-    local success, err = pcall(function()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            local headPos = target.Character.Head.Position
-            local cameraCFrame = Camera.CFrame
-            local direction = (headPos - cameraCFrame.Position).Unit
-            Camera.CFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + direction)
-        end
-    end)
-    if not success then
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Vex Hub Error";
-            Text = "Error in aimAt: "..tostring(err);
-            Duration = 5;
-        })
-    end
-end
-
--- Bullet Penetration (Placeholder)
-local function modifyBulletPenetration()
-    -- Bullet penetration requires modifying the game's bullet or raycast behavior.
-    -- This is highly game-specific and may require hooking or modifying internal functions.
-    -- As a placeholder, this function does nothing.
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "Vex Hub Notice";
-        Text = "Bullet Penetration feature is not implemented due to game limitations.";
-        Duration = 5;
-    })
-end
-
--- Auto Farm Implementation (Improved automatic detection and attack)
-local function autoFarm()
-    if not VexHub.AutoFarmEnabled then return end
-    local success, err = pcall(function()
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                    -- Aim at enemy
-                    aimAt(player)
-                    -- Simulate shooting - placeholder for game-specific implementation
-                    -- Example: fire remote event or activate tool
-                    -- This must be customized per game
+-- Função para Aimbot
+local function AimbotThread()
+    while Settings.Aimbot.Enabled do
+        task.wait()
+        local closestPlayer, closestDistance = nil, math.huge
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    local screenPoint = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+                    local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    
+                    if distance < closestDistance and distance < Settings.Aimbot.FOV then
+                        closestPlayer = player
+                        closestDistance = distance
+                    end
                 end
             end
         end
-    end)
-    if not success then
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Vex Hub Error";
-            Text = "Error in autoFarm: "..tostring(err);
-            Duration = 5;
-        })
+        
+        if closestPlayer and closestPlayer.Character then
+            local targetPart = closestPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if targetPart then
+                local camCFrame = Camera.CFrame
+                local targetPosition = targetPart.Position + Vector3.new(0, 1.5, 0)
+                local newCFrame = camCFrame:Lerp(CFrame.lookAt(camCFrame.Position, targetPosition), Settings.Aimbot.Smoothness)
+                Camera.CFrame = newCFrame
+            end
+        end
     end
 end
 
--- Connect toggles
-ESPToggle.MouseButton1Click:Connect(function()
-    VexHub.ESPEnabled = not VexHub.ESPEnabled
-    toggleButton(ESPToggle, VexHub.ESPEnabled)
-end)
-
-HitboxToggle.MouseButton1Click:Connect(function()
-    VexHub.HitboxEnabled = not VexHub.HitboxEnabled
-    toggleButton(HitboxToggle, VexHub.HitboxEnabled)
-    setHitbox(VexHub.HitboxEnabled)
-end)
-
-AimbotToggle.MouseButton1Click:Connect(function()
-    VexHub.AimbotEnabled = not VexHub.AimbotEnabled
-    toggleButton(AimbotToggle, VexHub.AimbotEnabled)
-end)
-
-BulletPenToggle.MouseButton1Click:Connect(function()
-    VexHub.BulletPenetrationEnabled = not VexHub.BulletPenetrationEnabled
-    toggleButton(BulletPenToggle, VexHub.BulletPenetrationEnabled)
-    if VexHub.BulletPenetrationEnabled then
-        modifyBulletPenetration()
+-- Função para AutoFarm
+local function AutoFarmThread()
+    while Settings.AutoFarm.Enabled do
+        task.wait(Settings.AutoFarm.Delay)
+        -- Implemente sua lógica de farm aqui
     end
-end)
+end
 
-AutoFarmToggle.MouseButton1Click:Connect(function()
-    VexHub.AutoFarmEnabled = not VexHub.AutoFarmEnabled
-    toggleButton(AutoFarmToggle, VexHub.AutoFarmEnabled)
-end)
+-- Cria as abas
+local VisualTab = Window:CreateTab("Visual", 4483362458)
+local CombatTab = Window:CreateTab("Combate", 4483362458)
+local FarmTab = Window:CreateTab("Farm", 4483362458)
 
--- Main loop
-RunService.RenderStepped:Connect(function()
-    if VexHub.ESPEnabled then
-        updateEsp()
-    else
-        for _, box in pairs(espBoxes) do
-            box.Visible = false
+-- Seção Visual
+VisualTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Callback = function(value)
+        Settings.ESP.Enabled = value
+        UpdateESP()
+    end
+})
+
+VisualTab:CreateColorPicker({
+    Name = "Cor do ESP",
+    Color = Settings.ESP.Color,
+    Callback = function(value)
+        Settings.ESP.Color = value
+        for _, esp in pairs(ESPInstances) do
+            esp.FillColor = value
+            esp.OutlineColor = value
         end
     end
+})
 
-    if VexHub.AimbotEnabled then
-        local target = getNearestEnemy()
-        if target then
-            aimAt(target)
+VisualTab:CreateToggle({
+    Name = "Hitbox Expander",
+    CurrentValue = false,
+    Callback = function(value)
+        Settings.Hitbox.Enabled = value
+        UpdateHitboxes()
+    end
+})
+
+-- Seção Combate
+CombatTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Callback = function(value)
+        Settings.Aimbot.Enabled = value
+        if value then
+            coroutine.wrap(AimbotThread)()
         end
     end
+})
 
-    if VexHub.AutoFarmEnabled then
-        autoFarm()
+CombatTab:CreateSlider({
+    Name = "Suavidade do Aimbot",
+    Range = {0.1, 1},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = Settings.Aimbot.Smoothness,
+    Callback = function(value)
+        Settings.Aimbot.Smoothness = value
     end
+})
+
+CombatTab:CreateSlider({
+    Name = "FOV do Aimbot",
+    Range = {50, 500},
+    Increment = 10,
+    Suffix = "px",
+    CurrentValue = Settings.Aimbot.FOV,
+    Callback = function(value)
+        Settings.Aimbot.FOV = value
+    end
+})
+
+-- Seção Farm
+FarmTab:CreateToggle({
+    Name = "AutoFarm",
+    CurrentValue = false,
+    Callback = function(value)
+        Settings.AutoFarm.Enabled = value
+        if value then
+            coroutine.wrap(AutoFarmThread)()
+        end
+    end
+})
+
+FarmTab:CreateSlider({
+    Name = "Delay do AutoFarm",
+    Range = {0.1, 5},
+    Increment = 0.1,
+    Suffix = "s",
+    CurrentValue = Settings.AutoFarm.Delay,
+    Callback = function(value)
+        Settings.AutoFarm.Delay = value
+    end
+})
+
+-- Conexões de eventos
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        if Settings.ESP.Enabled then UpdateESP() end
+        if Settings.Hitbox.Enabled then UpdateHitboxes() end
+    end)
 end)
 
--- Initialize toggles to OFF
-toggleButton(ESPToggle, false)
-toggleButton(HitboxToggle, false)
-toggleButton(AimbotToggle, false)
-toggleButton(BulletPenToggle, false)
-toggleButton(AutoFarmToggle, false)
+Players.PlayerRemoving:Connect(function(player)
+    if ESPInstances[player] then
+        ESPInstances[player]:Destroy()
+        ESPInstances[player] = nil
+    end
+    Hitboxes[player] = nil
+end)
 
-print("Vex Hub loaded. Use the GUI to toggle features.")
+-- Loop principal para atualizar features
+RunService.Heartbeat:Connect(function()
+    if Settings.ESP.Enabled then UpdateESP() end
+    if Settings.Hitbox.Enabled then UpdateHitboxes() end
+end)
+
+Rayfield:Notify({
+    Title = "GF Arena Mobile",
+    Content = "Script carregado com sucesso!",
+    Duration = 5,
+    Image = 4483362458
+})
