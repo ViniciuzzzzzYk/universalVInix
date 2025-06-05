@@ -21,7 +21,8 @@ VexHub.AutoFarmEnabled = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "VexHubGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+-- Parent to PlayerGui for better compatibility
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -101,7 +102,8 @@ MinimizeButton.MouseButton1Click:Connect(function()
     if minimized then
         MainFrame.Size = UDim2.new(0, 250, 0, 300)
         for _, child in pairs(MainFrame:GetChildren()) do
-            if child:IsA("Frame") then
+            -- Show all except MinimizeButton and Title
+            if child ~= MinimizeButton and child ~= Title then
                 child.Visible = true
             end
         end
@@ -110,7 +112,8 @@ MinimizeButton.MouseButton1Click:Connect(function()
     else
         MainFrame.Size = UDim2.new(0, 250, 0, 30)
         for _, child in pairs(MainFrame:GetChildren()) do
-            if child:IsA("Frame") then
+            -- Hide all except MinimizeButton and Title
+            if child ~= MinimizeButton and child ~= Title then
                 child.Visible = false
             end
         end
@@ -130,37 +133,44 @@ local function toggleButton(button, state)
     end
 end
 
--- ESP Implementation
-local espBoxes = {}
+-- ESP Implementation using BillboardGui for better compatibility
+local espTags = {}
 
-local function createEspBox(player)
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = Color3.new(1, 0, 0)
-    box.Thickness = 2
-    box.Filled = false
-    return box
+local function createEspTag(player)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "VexHubESP"
+    billboard.Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    billboard.Size = UDim2.new(4, 0, 4, 0)
+    billboard.AlwaysOnTop = true
+    billboard.LightInfluence = 0
+    billboard.Parent = player.Character and player.Character:FindFirstChild("HumanoidRootPart") or nil
+
+    local frame = Instance.new("Frame")
+    frame.BackgroundColor3 = Color3.new(1, 0, 0)
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.Parent = billboard
+
+    return billboard
 end
 
 local function updateEsp()
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local rootPart = player.Character.HumanoidRootPart
-            local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-            if onScreen then
-                if not espBoxes[player] then
-                    espBoxes[player] = createEspBox(player)
+        if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+                if not espTags[player] then
+                    espTags[player] = createEspTag(player)
+                else
+                    espTags[player].Adornee = player.Character.HumanoidRootPart
+                    espTags[player].Parent = player.Character.HumanoidRootPart
                 end
-                local box = espBoxes[player]
-                local size = 100 / pos.Z
-                box.Size = size
-                box.Position = Vector2.new(pos.X - size / 2, pos.Y - size / 2)
-                box.Visible = VexHub.ESPEnabled
-            elseif espBoxes[player] then
-                espBoxes[player].Visible = false
+                espTags[player].Enabled = VexHub.ESPEnabled
+            elseif espTags[player] then
+                espTags[player].Enabled = false
             end
-        elseif espBoxes[player] then
-            espBoxes[player].Visible = false
+        elseif espTags[player] then
+            espTags[player].Enabled = false
         end
     end
 end
@@ -170,21 +180,23 @@ local originalSizes = {}
 
 local function setHitbox(enabled)
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            if enabled then
-                if not originalSizes[player] then
-                    originalSizes[player] = rootPart.Size
-                end
-                rootPart.Size = Vector3.new(10, 10, 10)
-                rootPart.Transparency = 0.5
-                rootPart.CanCollide = false
-            else
-                if originalSizes[player] then
-                    rootPart.Size = originalSizes[player]
-                    rootPart.Transparency = 1
-                    rootPart.CanCollide = true
-                    originalSizes[player] = nil
+        if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = player.Character.HumanoidRootPart
+                if enabled then
+                    if not originalSizes[player] then
+                        originalSizes[player] = rootPart.Size
+                    end
+                    rootPart.Size = Vector3.new(10, 10, 10)
+                    rootPart.Transparency = 0.5
+                    rootPart.CanCollide = false
+                else
+                    if originalSizes[player] then
+                        rootPart.Size = originalSizes[player]
+                        rootPart.Transparency = 1
+                        rootPart.CanCollide = true
+                        originalSizes[player] = nil
+                    end
                 end
             end
         end
@@ -197,15 +209,29 @@ local function getNearestEnemy()
     local shortestDistance = math.huge
     local mousePos = UserInputService:GetMouseLocation()
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-            if onScreen then
-                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                if dist < shortestDistance then
-                    shortestDistance = dist
-                    nearestPlayer = player
+        if player ~= LocalPlayer then
+            local success, err = pcall(function()
+                -- Fix team detection: check if player.Team is not equal to LocalPlayer.Team
+                if player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+                        local rootPart = player.Character.HumanoidRootPart
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                        if onScreen then
+                            local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+                            if dist < shortestDistance then
+                                shortestDistance = dist
+                                nearestPlayer = player
+                            end
+                        end
+                    end
                 end
+            end)
+            if not success then
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Vex Hub Error";
+                    Text = "Error in getNearestEnemy: "..tostring(err);
+                    Duration = 5;
+                })
             end
         end
     end
@@ -213,31 +239,57 @@ local function getNearestEnemy()
 end
 
 local function aimAt(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local headPos = target.Character.Head.Position
-        local cameraCFrame = Camera.CFrame
-        local direction = (headPos - cameraCFrame.Position).Unit
-        Camera.CFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + direction)
+    local success, err = pcall(function()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local headPos = target.Character.Head.Position
+            local cameraCFrame = Camera.CFrame
+            local direction = (headPos - cameraCFrame.Position).Unit
+            Camera.CFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + direction)
+        end
+    end)
+    if not success then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Vex Hub Error";
+            Text = "Error in aimAt: "..tostring(err);
+            Duration = 5;
+        })
     end
 end
 
--- Bullet Penetration (Simulated by ignoring walls in raycast)
+-- Bullet Penetration (Placeholder)
 local function modifyBulletPenetration()
-    -- This is highly dependent on the game's bullet implementation.
-    -- As a placeholder, we simulate by ignoring walls in raycasts or modifying bullet scripts.
-    -- This requires game-specific knowledge and may not be fully functional without game internals.
+    -- Bullet penetration requires modifying the game's bullet or raycast behavior.
+    -- This is highly game-specific and may require hooking or modifying internal functions.
+    -- As a placeholder, this function does nothing.
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Vex Hub Notice";
+        Text = "Bullet Penetration feature is not implemented due to game limitations.";
+        Duration = 5;
+    })
 end
 
--- Auto Farm Implementation
+-- Auto Farm Implementation (Improved automatic detection and attack)
 local function autoFarm()
     if not VexHub.AutoFarmEnabled then return end
-    local target = getNearestEnemy()
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        -- Aim at target
-        aimAt(target)
-        -- Simulate shooting (depends on game, placeholder)
-        -- For example, fire a remote event or tool activation
-        -- This part requires game-specific implementation
+    local success, err = pcall(function()
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Team and LocalPlayer.Team and player.Team ~= LocalPlayer.Team then
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+                    -- Aim at enemy
+                    aimAt(player)
+                    -- Simulate shooting - placeholder for game-specific implementation
+                    -- Example: fire remote event or activate tool
+                    -- This must be customized per game
+                end
+            end
+        end
+    end)
+    if not success then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Vex Hub Error";
+            Text = "Error in autoFarm: "..tostring(err);
+            Duration = 5;
+        })
     end
 end
 
