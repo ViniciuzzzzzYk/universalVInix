@@ -1,10 +1,3 @@
---[[
-  Gunfight Arena Mobile Exploit
-  Versão: 1.2
-  Otimizado para mobile (Delta, Hydrogen, Fluxus)
-  Features: ESP, Hitbox Expander, Aimbot, AutoFarm
-]]
-
 -- Verifica se o jogo carregou
 if not game:IsLoaded() then
     game.Loaded:Wait()
