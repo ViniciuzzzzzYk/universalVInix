@@ -1,28 +1,38 @@
+--[[
+  Gunfight Arena Exploit v1.3
+  Interface mobile-friendly
+  Funciona em Delta, Hydrogen, Fluxus
+]]
+
 -- Verifica se o jogo carregou
-if not game:IsLoaded() then
-    game.Loaded:Wait()
+repeat wait() until game:IsLoaded()
+
+-- Carrega a biblioteca de interface
+local success, library = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
+end)
+
+if not success then
+    warn("Falha ao carregar a biblioteca de interface")
+    return
 end
 
--- Biblioteca UI otimizada para mobile
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
-
 -- Cria a janela principal
-local Window = Rayfield:CreateWindow({
-    Name = "GF Arena Mobile",
-    LoadingTitle = "Carregando exploit...",
-    LoadingSubtitle = "by Test Scripts",
-    ConfigurationSaving = { Enabled = false },
-    Discord = { Enabled = false }
+local Window = library:CreateWindow({
+    Title = "GF Arena Mobile",
+    Center = true, 
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
 })
 
--- Serviços
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
+-- Cria as abas
+local VisualTab = Window:AddTab("Visual")
+local CombatTab = Window:AddTab("Combate")
+local FarmTab = Window:AddTab("Farm")
 
--- Configurações
-local Settings = {
+-- Variáveis de configuração
+local Config = {
     ESP = {
         Enabled = false,
         Color = Color3.fromRGB(255, 50, 50),
@@ -34,234 +44,118 @@ local Settings = {
     },
     Aimbot = {
         Enabled = false,
-        Smoothness = 0.1,
-        FOV = 100,
+        Smoothness = 0.2,
+        FOV = 120,
         TeamCheck = true
     },
     AutoFarm = {
         Enabled = false,
-        Delay = 1
+        Delay = 0.5
     }
 }
 
--- Tabelas de armazenamento
-local ESPInstances = {}
-local Hitboxes = {}
+-- Elementos da interface
 
--- Função para criar ESP
-local function UpdateESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                if Settings.ESP.Enabled then
-                    if not ESPInstances[player] then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = player.Name.."_ESP"
-                        highlight.FillColor = Settings.ESP.Color
-                        highlight.OutlineColor = Settings.ESP.Color
-                        highlight.FillTransparency = 0.5
-                        highlight.Parent = character
-                        ESPInstances[player] = highlight
-                    end
-                    ESPInstances[player].Adornee = character
-                    ESPInstances[player].Parent = character
-                else
-                    if ESPInstances[player] then
-                        ESPInstances[player]:Destroy()
-                        ESPInstances[player] = nil
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Função para Hitbox Expander
-local function UpdateHitboxes()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-                if humanoidRootPart then
-                    if Settings.Hitbox.Enabled then
-                        humanoidRootPart.Size = Settings.Hitbox.Size
-                        humanoidRootPart.Transparency = 0.7
-                        humanoidRootPart.CanCollide = false
-                        Hitboxes[player] = true
-                    else
-                        if Hitboxes[player] then
-                            humanoidRootPart.Size = Vector3.new(2, 2, 1)
-                            humanoidRootPart.Transparency = 0
-                            Hitboxes[player] = nil
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Função para Aimbot
-local function AimbotThread()
-    while Settings.Aimbot.Enabled do
-        task.wait()
-        local closestPlayer, closestDistance = nil, math.huge
-        
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-                if humanoidRootPart then
-                    local screenPoint = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-                    local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                    
-                    if distance < closestDistance and distance < Settings.Aimbot.FOV then
-                        closestPlayer = player
-                        closestDistance = distance
-                    end
-                end
-            end
-        end
-        
-        if closestPlayer and closestPlayer.Character then
-            local targetPart = closestPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if targetPart then
-                local camCFrame = Camera.CFrame
-                local targetPosition = targetPart.Position + Vector3.new(0, 1.5, 0)
-                local newCFrame = camCFrame:Lerp(CFrame.lookAt(camCFrame.Position, targetPosition), Settings.Aimbot.Smoothness)
-                Camera.CFrame = newCFrame
-            end
-        end
-    end
-end
-
--- Função para AutoFarm
-local function AutoFarmThread()
-    while Settings.AutoFarm.Enabled do
-        task.wait(Settings.AutoFarm.Delay)
-        -- Implemente sua lógica de farm aqui
-    end
-end
-
--- Cria as abas
-local VisualTab = Window:CreateTab("Visual", 4483362458)
-local CombatTab = Window:CreateTab("Combate", 4483362458)
-local FarmTab = Window:CreateTab("Farm", 4483362458)
-
--- Seção Visual
-VisualTab:CreateToggle({
-    Name = "ESP",
-    CurrentValue = false,
+-- Tab Visual
+local ESPToggle = VisualTab:AddToggle("ESP", {
+    Text = "ESP (Visualização)",
+    Default = false,
+    Tooltip = "Mostra jogadores através das paredes",
     Callback = function(value)
-        Settings.ESP.Enabled = value
-        UpdateESP()
+        Config.ESP.Enabled = value
+        library:Notify("ESP " .. (value and "ativado" or "desativado"))
     end
 })
 
-VisualTab:CreateColorPicker({
-    Name = "Cor do ESP",
-    Color = Settings.ESP.Color,
+local ESPColor = VisualTab:AddColorPicker("ESPColor", {
+    Title = "Cor do ESP",
+    Default = Config.ESP.Color,
     Callback = function(value)
-        Settings.ESP.Color = value
-        for _, esp in pairs(ESPInstances) do
-            esp.FillColor = value
-            esp.OutlineColor = value
-        end
+        Config.ESP.Color = value
     end
 })
 
-VisualTab:CreateToggle({
-    Name = "Hitbox Expander",
-    CurrentValue = false,
+local HitboxToggle = VisualTab:AddToggle("HitboxExpander", {
+    Text = "Hitbox Expander",
+    Default = false,
+    Tooltip = "Aumenta a hitbox dos inimigos",
     Callback = function(value)
-        Settings.Hitbox.Enabled = value
-        UpdateHitboxes()
+        Config.Hitbox.Enabled = value
+        library:Notify("Hitbox Expander " .. (value and "ativado" or "desativado"))
     end
 })
 
--- Seção Combate
-CombatTab:CreateToggle({
-    Name = "Aimbot",
-    CurrentValue = false,
+-- Tab Combate
+local AimbotToggle = CombatTab:AddToggle("Aimbot", {
+    Text = "Aimbot",
+    Default = false,
+    Tooltip = "Mira automática nos inimigos",
     Callback = function(value)
-        Settings.Aimbot.Enabled = value
-        if value then
-            coroutine.wrap(AimbotThread)()
-        end
+        Config.Aimbot.Enabled = value
+        library:Notify("Aimbot " .. (value and "ativado" or "desativado"))
     end
 })
 
-CombatTab:CreateSlider({
-    Name = "Suavidade do Aimbot",
-    Range = {0.1, 1},
-    Increment = 0.1,
-    Suffix = "x",
-    CurrentValue = Settings.Aimbot.Smoothness,
+local AimbotSmoothness = CombatTab:AddSlider("AimbotSmoothness", {
+    Text = "Suavidade",
+    Default = Config.Aimbot.Smoothness * 10,
+    Min = 1,
+    Max = 10,
+    Rounding = 1,
     Callback = function(value)
-        Settings.Aimbot.Smoothness = value
+        Config.Aimbot.Smoothness = value / 10
     end
 })
 
-CombatTab:CreateSlider({
-    Name = "FOV do Aimbot",
-    Range = {50, 500},
-    Increment = 10,
-    Suffix = "px",
-    CurrentValue = Settings.Aimbot.FOV,
+local AimbotFOV = CombatTab:AddSlider("AimbotFOV", {
+    Text = "Campo de Visão",
+    Default = Config.Aimbot.FOV,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
     Callback = function(value)
-        Settings.Aimbot.FOV = value
+        Config.Aimbot.FOV = value
     end
 })
 
--- Seção Farm
-FarmTab:CreateToggle({
-    Name = "AutoFarm",
-    CurrentValue = false,
+-- Tab Farm
+local AutoFarmToggle = FarmTab:AddToggle("AutoFarm", {
+    Text = "Auto Farm",
+    Default = false,
+    Tooltip = "Farm automático de pontos",
     Callback = function(value)
-        Settings.AutoFarm.Enabled = value
-        if value then
-            coroutine.wrap(AutoFarmThread)()
-        end
+        Config.AutoFarm.Enabled = value
+        library:Notify("Auto Farm " .. (value and "ativado" or "desativado"))
     end
 })
 
-FarmTab:CreateSlider({
-    Name = "Delay do AutoFarm",
-    Range = {0.1, 5},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = Settings.AutoFarm.Delay,
+local AutoFarmDelay = FarmTab:AddSlider("AutoFarmDelay", {
+    Text = "Intervalo",
+    Default = Config.AutoFarm.Delay * 10,
+    Min = 1,
+    Max = 50,
+    Rounding = 1,
     Callback = function(value)
-        Settings.AutoFarm.Delay = value
+        Config.AutoFarm.Delay = value / 10
     end
 })
 
--- Conexões de eventos
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        if Settings.ESP.Enabled then UpdateESP() end
-        if Settings.Hitbox.Enabled then UpdateHitboxes() end
-    end)
+-- Botão de fechar
+local UnloadButton = Window:AddButton("Descarregar", function()
+    library:Unload()
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-    if ESPInstances[player] then
-        ESPInstances[player]:Destroy()
-        ESPInstances[player] = nil
-    end
-    Hitboxes[player] = nil
+-- Atualiza a interface para mobile
+library:SetWatermarkVisibility(true)
+library:SetWatermark("GF Arena Mobile v1.3")
+
+-- Aplica configurações mobile
+library:OnUnload(function()
+    print("Interface descarregada")
 end)
 
--- Loop principal para atualizar features
-RunService.Heartbeat:Connect(function()
-    if Settings.ESP.Enabled then UpdateESP() end
-    if Settings.Hitbox.Enabled then UpdateHitboxes() end
-end)
+-- Notificação inicial
+library:Notify("Interface carregada com sucesso!", 5)
 
-Rayfield:Notify({
-    Title = "GF Arena Mobile",
-    Content = "Script carregado com sucesso!",
-    Duration = 5,
-    Image = 4483362458
-})
+-- Inicializa a interface
+library:Init()
