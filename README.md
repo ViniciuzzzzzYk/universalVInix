@@ -1,4 +1,4 @@
--- RLK HUB (LocalScript) - Paste into StarterPlayerScripts
+-- RLK HUB v2.0 (LocalScript) - Paste into StarterPlayerScripts
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -15,101 +15,60 @@ RLKHub.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BackgroundTransparency = 0.2
+MainFrame.Size = UDim2.new(0, 400, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BackgroundTransparency = 0.15
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
+MainFrame.Visible = false -- Starts hidden
 MainFrame.Parent = RLKHub
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-
--- Make TopBar draggable to move the GUI
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UIS.InputChanged:Connect(function(input)
-    if dragging and input == dragInput then
-        updateDrag(input)
-    end
-end)
 
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "RLK HUB v1.0"
+Title.Text = "RLK HUB v2.0"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.TextSize = 16
 Title.Parent = TopBar
 
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.Size = UDim2.new(0, 40, 0, 40)
+CloseButton.Position = UDim2.new(1, -40, 0, 0)
 CloseButton.BackgroundTransparency = 1
-CloseButton.Text = "X"
+CloseButton.Text = "×"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
+CloseButton.TextSize = 24
 CloseButton.Parent = TopBar
 
 local TabButtons = Instance.new("Frame")
 TabButtons.Name = "TabButtons"
-TabButtons.Size = UDim2.new(0, 100, 1, -30)
-TabButtons.Position = UDim2.new(0, 0, 0, 30)
+TabButtons.Size = UDim2.new(0, 120, 1, -40)
+TabButtons.Position = UDim2.new(0, 0, 0, 40)
 TabButtons.BackgroundTransparency = 1
 TabButtons.Parent = MainFrame
 
 local Tabs = Instance.new("Frame")
 Tabs.Name = "Tabs"
-Tabs.Size = UDim2.new(1, -100, 1, -30)
-Tabs.Position = UDim2.new(0, 100, 0, 30)
+Tabs.Size = UDim2.new(1, -120, 1, -40)
+Tabs.Position = UDim2.new(0, 120, 0, 40)
 Tabs.BackgroundTransparency = 1
 Tabs.Parent = MainFrame
 
@@ -117,15 +76,15 @@ Tabs.Parent = MainFrame
 local function createTab(name)
     local button = Instance.new("TextButton")
     button.Name = name.."Tab"
-    button.Size = UDim2.new(1, 0, 0, 40)
-    button.Position = UDim2.new(0, 0, 0, (40 * (#TabButtons:GetChildren() - 1)))
-    button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    button.BackgroundTransparency = 0.5
+    button.Size = UDim2.new(1, -10, 0, 45)
+    button.Position = UDim2.new(0, 5, 0, (50 * (#TabButtons:GetChildren() - 1)))
+    button.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    button.BackgroundTransparency = 0.7
     button.BorderSizePixel = 0
     button.Text = name
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.Gotham
-    button.TextSize = 12
+    button.Font = Enum.Font.GothamMedium
+    button.TextSize = 14
     button.Parent = TabButtons
     
     local tab = Instance.new("ScrollingFrame")
@@ -134,21 +93,27 @@ local function createTab(name)
     tab.Position = UDim2.new(0, 0, 0, 0)
     tab.BackgroundTransparency = 1
     tab.Visible = false
-    tab.ScrollBarThickness = 3
+    tab.ScrollBarThickness = 4
     tab.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    tab.CanvasSize = UDim2.new(0, 0, 0, 0)
     tab.Parent = Tabs
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 10)
+    UIListLayout.Parent = tab
     
     UICorner:Clone().Parent = button
     
     return tab
 end
 
--- Movement Tab
+-- Create Tabs
 local MovementTab = createTab("Movement")
 local VisualTab = createTab("Visual")
 
 -- Make first tab visible
 MovementTab.Visible = true
+TabButtons:FindFirstChild("MovementTab").BackgroundTransparency = 0.4
 
 -- Tab Switching
 for _, button in ipairs(TabButtons:GetChildren()) do
@@ -159,27 +124,30 @@ for _, button in ipairs(TabButtons:GetChildren()) do
                     tab.Visible = false
                 end
             end
-            Tabs[button.Name:gsub("Tab", "")].Visible = true
+            for _, btn in ipairs(TabButtons:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.BackgroundTransparency = 0.7
+                end
+            end
             
-            -- Animate button click
-            button.BackgroundTransparency = 0.3
-            task.wait(0.1)
-            button.BackgroundTransparency = 0.5
+            Tabs[button.Name:gsub("Tab", "")].Visible = true
+            button.BackgroundTransparency = 0.4
         end)
     end
 end
 
 -- Toggle GUI Visibility
-local guiVisible = true
-CloseButton.MouseButton1Click:Connect(function()
+local guiVisible = false
+local function toggleGUI()
     guiVisible = not guiVisible
     MainFrame.Visible = guiVisible
-end)
+end
+
+CloseButton.MouseButton1Click:Connect(toggleGUI)
 
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed then
-        guiVisible = not guiVisible
-        MainFrame.Visible = guiVisible
+        toggleGUI()
     end
 end)
 
@@ -187,10 +155,10 @@ end)
 local function createToggle(parent, name, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Name = name.."Toggle"
-    toggleFrame.Size = UDim2.new(1, -20, 0, 30)
-    toggleFrame.Position = UDim2.new(0, 10, 0, 10 + (35 * (#parent:GetChildren() - 1)))
-    toggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    toggleFrame.BackgroundTransparency = 0.5
+    toggleFrame.Size = UDim2.new(1, -20, 0, 40)
+    toggleFrame.Position = UDim2.new(0, 10, 0, 10 + (45 * (#parent:GetChildren() - 1)))
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    toggleFrame.BackgroundTransparency = 0.7
     toggleFrame.BorderSizePixel = 0
     toggleFrame.Parent = parent
     
@@ -199,29 +167,30 @@ local function createToggle(parent, name, callback)
     local toggleLabel = Instance.new("TextLabel")
     toggleLabel.Name = "Label"
     toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    toggleLabel.Position = UDim2.new(0, 10, 0, 0)
+    toggleLabel.Position = UDim2.new(0, 15, 0, 0)
     toggleLabel.BackgroundTransparency = 1
     toggleLabel.Text = name
     toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
     toggleLabel.Font = Enum.Font.Gotham
-    toggleLabel.TextSize = 12
+    toggleLabel.TextSize = 14
     toggleLabel.Parent = toggleFrame
     
     local toggleButton = Instance.new("TextButton")
     toggleButton.Name = "ToggleButton"
-    toggleButton.Size = UDim2.new(0, 50, 0, 20)
-    toggleButton.Position = UDim2.new(1, -60, 0.5, -10)
-    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    toggleButton.Size = UDim2.new(0, 60, 0, 25)
+    toggleButton.Position = UDim2.new(1, -70, 0.5, -12)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    toggleButton.AutoButtonColor = false
     toggleButton.BorderSizePixel = 0
     toggleButton.Text = ""
     toggleButton.Parent = toggleFrame
     
     local toggleCircle = Instance.new("Frame")
     toggleCircle.Name = "Circle"
-    toggleCircle.Size = UDim2.new(0, 16, 0, 16)
-    toggleCircle.Position = UDim2.new(0, 2, 0.5, -8)
-    toggleCircle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    toggleCircle.Size = UDim2.new(0, 20, 0, 20)
+    toggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
     toggleCircle.BorderSizePixel = 0
     toggleCircle.Parent = toggleButton
     
@@ -232,11 +201,21 @@ local function createToggle(parent, name, callback)
     
     local function updateToggle()
         if state then
-            TweenService:Create(toggleCircle, TweenInfo.new(0.2), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
-            TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.2), {
+                Position = UDim2.new(1, -23, 0.5, -10),
+                BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+            }):Play()
+            TweenService:Create(toggleButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+            }):Play()
         else
-            TweenService:Create(toggleCircle, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
-            TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+            TweenService:Create(toggleCircle, TweenInfo.new(0.2), {
+                Position = UDim2.new(0, 3, 0.5, -10),
+                BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+            }):Play()
+            TweenService:Create(toggleButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+            }):Play()
         end
         callback(state)
     end
@@ -250,197 +229,337 @@ local function createToggle(parent, name, callback)
         Set = function(value)
             state = value
             updateToggle()
+        end,
+        Get = function()
+            return state
         end
     }
 end
 
--- Fly Feature with adjustable speed
+-- Slider Function
+local function createSlider(parent, name, min, max, default, callback)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = name.."Slider"
+    sliderFrame.Size = UDim2.new(1, -20, 0, 60)
+    sliderFrame.Position = UDim2.new(0, 10, 0, 10 + (65 * (#parent:GetChildren() - 1)))
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    sliderFrame.BackgroundTransparency = 0.7
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = parent
+    
+    UICorner:Clone().Parent = sliderFrame
+    
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Name = "Label"
+    sliderLabel.Size = UDim2.new(1, -20, 0, 20)
+    sliderLabel.Position = UDim2.new(0, 10, 0, 5)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.Text = name..": "..default
+    sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sliderLabel.Font = Enum.Font.Gotham
+    sliderLabel.TextSize = 14
+    sliderLabel.Parent = sliderFrame
+    
+    local sliderTrack = Instance.new("Frame")
+    sliderTrack.Name = "Track"
+    sliderTrack.Size = UDim2.new(1, -20, 0, 6)
+    sliderTrack.Position = UDim2.new(0, 10, 0, 35)
+    sliderTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    sliderTrack.BorderSizePixel = 0
+    sliderTrack.Parent = sliderFrame
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Name = "Fill"
+    sliderFill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+    sliderFill.Position = UDim2.new(0, 0, 0, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderTrack
+    
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Name = "Button"
+    sliderButton.Size = UDim2.new(0, 16, 0, 16)
+    sliderButton.Position = UDim2.new((default - min)/(max - min), -8, 0.5, -8)
+    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderButton.AutoButtonColor = false
+    sliderButton.Text = ""
+    sliderButton.Parent = sliderTrack
+    
+    UICorner:Clone().Parent = sliderTrack
+    UICorner:Clone().Parent = sliderFill
+    UICorner:Clone().Parent = sliderButton
+    
+    local dragging = false
+    local currentValue = default
+    
+    local function updateSlider(value)
+        value = math.clamp(value, min, max)
+        currentValue = value
+        sliderFill.Size = UDim2.new((value - min)/(max - min), 0, 1, 0)
+        sliderButton.Position = UDim2.new((value - min)/(max - min), -8, 0.5, -8)
+        sliderLabel.Text = name..": "..math.floor(value)
+        callback(value)
+    end
+    
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local xScale = (input.Position.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X
+            updateSlider(min + (max - min) * math.clamp(xScale, 0, 1))
+        end
+    end)
+    
+    return {
+        Set = function(value)
+            updateSlider(value)
+        end,
+        Get = function()
+            return currentValue
+        end
+    }
+end
+
+-- Fly Feature
+local flyEnabled = false
 local flySpeed = 50
 local flyBodyVelocity
-local flyConnection
 
 local flyToggle = createToggle(MovementTab, "Fly", function(state)
+    flyEnabled = state
+    
     if state then
-        local character = LocalPlayer.Character
-        if not character then return end
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-
-        if flyBodyVelocity then
-            flyBodyVelocity:Destroy()
+        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            flyToggle.Set(false)
+            return
         end
-
+        
         flyBodyVelocity = Instance.new("BodyVelocity")
         flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
         flyBodyVelocity.MaxForce = Vector3.new(0, 0, 0)
-        flyBodyVelocity.Parent = hrp
-
+        flyBodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+        
         LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-
-        flyConnection = RunService.Heartbeat:Connect(function()
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or not flyBodyVelocity then
-                if flyConnection then
-                    flyConnection:Disconnect()
-                    flyConnection = nil
-                end
-                return
-            end
-
-            local cam = Camera.CFrame
-            local forward = (cam.LookVector * Vector3.new(1, 0, 1)).Unit
-            local right = (cam.RightVector * Vector3.new(1, 0, 1)).Unit
-
-            local velocity = Vector3.new(0, 0, 0)
-
-            if UIS:IsKeyDown(Enum.KeyCode.W) then velocity = velocity + forward end
-            if UIS:IsKeyDown(Enum.KeyCode.S) then velocity = velocity - forward end
-            if UIS:IsKeyDown(Enum.KeyCode.D) then velocity = velocity + right end
-            if UIS:IsKeyDown(Enum.KeyCode.A) then velocity = velocity - right end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then velocity = velocity + Vector3.new(0, 1, 0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then velocity = velocity - Vector3.new(0, 1, 0) end
-
-            if velocity.Magnitude > 0 then
-                velocity = velocity.Unit * flySpeed
-            end
-
-            flyBodyVelocity.Velocity = velocity
-            flyBodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-        end)
     else
         if flyBodyVelocity then
             flyBodyVelocity:Destroy()
             flyBodyVelocity = nil
         end
-        if flyConnection then
-            flyConnection:Disconnect()
-            flyConnection = nil
-        end
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
     end
 end)
 
--- Speed Feature with input box
-local speedValue = 16
+local flySpeedSlider = createSlider(MovementTab, "Fly Speed", 20, 150, 50, function(value)
+    flySpeed = value
+end)
+
+-- Speed Feature
+local speedEnabled = false
+local speedValue = 50
 
 local speedToggle = createToggle(MovementTab, "Speed Hack", function(state)
-    if state then
-        LocalPlayer.Character.Humanoid.WalkSpeed = speedValue
-    else
-        LocalPlayer.Character.Humanoid.WalkSpeed = 16
+    speedEnabled = state
+    
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = state and speedValue or 16
     end
 end)
 
-local speedInputFrame = Instance.new("Frame")
-speedInputFrame.Size = UDim2.new(1, -20, 0, 30)
-speedInputFrame.Position = UDim2.new(0, 10, 0, 45 + (35 * (#MovementTab:GetChildren() - 1)))
-speedInputFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-speedInputFrame.BackgroundTransparency = 0.5
-speedInputFrame.BorderSizePixel = 0
-speedInputFrame.Parent = MovementTab
+local speedSlider = createSlider(MovementTab, "WalkSpeed", 16, 100, 50, function(value)
+    speedValue = value
+    if speedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end
+end)
 
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(0.7, 0, 1, 0)
-speedLabel.Position = UDim2.new(0, 10, 0, 0)
-speedLabel.BackgroundTransparency = 1
-speedLabel.Text = "Speed Value"
-speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedLabel.Font = Enum.Font.Gotham
-speedLabel.TextSize = 12
-speedLabel.Parent = speedInputFrame
+-- Infinite Jump (One-time activation)
+local infiniteJumpEnabled = false
+local infiniteJumpConnection
 
-local speedTextBox = Instance.new("TextBox")
-speedTextBox.Size = UDim2.new(0.3, 0, 1, 0)
-speedTextBox.Position = UDim2.new(0.7, 0, 0, 0)
-speedTextBox.Text = tostring(speedValue)
-speedTextBox.ClearTextOnFocus = false
-speedTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-speedTextBox.Font = Enum.Font.Gotham
-speedTextBox.TextSize = 12
-speedTextBox.Parent = speedInputFrame
+local infiniteJumpButton = Instance.new("TextButton")
+infiniteJumpButton.Name = "InfiniteJumpButton"
+infiniteJumpButton.Size = UDim2.new(1, -20, 0, 40)
+infiniteJumpButton.Position = UDim2.new(0, 10, 0, 10 + (65 * (#MovementTab:GetChildren() - 1)))
+infiniteJumpButton.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+infiniteJumpButton.BackgroundTransparency = 0.7
+infiniteJumpButton.BorderSizePixel = 0
+infiniteJumpButton.Text = "TOGGLE INFINITE JUMP"
+infiniteJumpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+infiniteJumpButton.Font = Enum.Font.GothamBold
+infiniteJumpButton.TextSize = 14
+infiniteJumpButton.Parent = MovementTab
 
-speedTextBox.FocusLost:Connect(function(enterPressed)
-    local val = tonumber(speedTextBox.Text)
-    if val and val >= 16 and val <= 100 then
-        speedValue = val
-        if speedToggle then
-            if speedToggle.Set then
-                speedToggle.Set(true)
-            end
+UICorner:Clone().Parent = infiniteJumpButton
+
+infiniteJumpButton.MouseButton1Click:Connect(function()
+    infiniteJumpEnabled = not infiniteJumpEnabled
+    
+    if infiniteJumpEnabled then
+        infiniteJumpButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        infiniteJumpButton.Text = "INFINITE JUMP: ON"
+        
+        if infiniteJumpConnection then
+            infiniteJumpConnection:Disconnect()
         end
+        
+        infiniteJumpConnection = UIS.JumpRequest:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
     else
-        speedTextBox.Text = tostring(speedValue)
-    end
-end)
-
--- Infinite Jump
-local infiniteJumpToggle = createToggle(MovementTab, "Infinite Jump", function(state)
-    if state then
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-    else
-        LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        infiniteJumpButton.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+        infiniteJumpButton.Text = "TOGGLE INFINITE JUMP"
+        
+        if infiniteJumpConnection then
+            infiniteJumpConnection:Disconnect()
+            infiniteJumpConnection = nil
+        end
     end
 end)
 
 -- ESP Feature
-local espToggle = createToggle(VisualTab, "ESP", function(state)
-    if state then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local highlight = Instance.new("Highlight")
-                highlight.Name = "RLKESP"
-                highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.FillTransparency = 0.5
-                highlight.Parent = player.Character
-            end
-        end
-        
-        Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function(character)
-                if espToggle then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "RLKESP"
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.FillTransparency = 0.5
-                    highlight.Parent = character
-                end
-            end)
-        end)
-    else
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, v in ipairs(player.Character:GetChildren()) do
-                    if v.Name == "RLKESP" then
-                        v:Destroy()
+local espEnabled = false
+local espHighlights = {}
+
+local function updateESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if espEnabled then
+                if player.Character then
+                    if not espHighlights[player] then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "RLKESP"
+                        highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.FillTransparency = 0.5
+                        highlight.OutlineTransparency = 0
+                        highlight.Parent = player.Character
+                        espHighlights[player] = highlight
                     end
+                end
+            else
+                if espHighlights[player] then
+                    espHighlights[player]:Destroy()
+                    espHighlights[player] = nil
                 end
             end
         end
     end
+end
+
+local espToggle = createToggle(VisualTab, "ESP", function(state)
+    espEnabled = state
+    updateESP()
 end)
 
 -- Character Added Events
-LocalPlayer.CharacterAdded:Connect(function(character)
-    if speedToggle then
-        character:WaitForChild("Humanoid").WalkSpeed = speedToggle and 50 or 16
+local function onCharacterAdded(character)
+    if flyEnabled then
+        flyToggle.Set(true)
     end
     
-    if infiniteJumpToggle then
-        character:WaitForChild("Humanoid"):SetStateEnabled(Enum.HumanoidStateType.Jumping, not infiniteJumpToggle)
+    if speedEnabled then
+        character:WaitForChild("Humanoid").WalkSpeed = speedValue
+    end
+    
+    if infiniteJumpEnabled then
+        infiniteJumpConnection = UIS.JumpRequest:Connect(function()
+            character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end)
+    end
+    
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        if infiniteJumpConnection then
+            infiniteJumpConnection:Disconnect()
+            infiniteJumpConnection = nil
+        end
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+-- Player Added Events
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if espEnabled then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "RLKESP"
+            highlight.FillColor = Color3.fromRGB(255, 50, 50)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Parent = character
+            espHighlights[player] = highlight
+        end
+    end)
+end)
+
+-- Initial ESP Setup
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and player.Character then
+        if espEnabled then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "RLKESP"
+            highlight.FillColor = Color3.fromRGB(255, 50, 50)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Parent = player.Character
+            espHighlights[player] = highlight
+        end
+    end
+end
+
+-- Fly Movement Handler
+RunService.Heartbeat:Connect(function()
+    if flyEnabled and flyBodyVelocity and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = LocalPlayer.Character.HumanoidRootPart
+        local cam = Camera.CFrame
+        
+        local forward = (cam.LookVector * Vector3.new(1, 0, 1)).Unit
+        local right = (cam.RightVector * Vector3.new(1, 0, 1)).Unit
+        
+        local velocity = Vector3.new(0, 0, 0)
+        
+        if UIS:IsKeyDown(Enum.KeyCode.W) then velocity = velocity + forward end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then velocity = velocity - forward end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then velocity = velocity + right end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then velocity = velocity - right end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then velocity = velocity + Vector3.new(0, 1, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then velocity = velocity - Vector3.new(0, 1, 0) end
+        
+        if velocity.Magnitude > 0 then
+            velocity = velocity.Unit * flySpeed
+        end
+        
+        flyBodyVelocity.Velocity = velocity
+        flyBodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
     end
 end)
 
 -- Initialization
-task.spawn(function()
-    repeat task.wait() until LocalPlayer.Character
-    if speedToggle then speedToggle.Set(false) end
-    if infiniteJumpToggle then infiniteJumpToggle.Set(false) end
-    if flyToggle then flyToggle.Set(false) end
-    if espToggle then espToggle.Set(false) end
-end)
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
+
+-- Auto-update canvas size for tabs
+for _, tab in ipairs(Tabs:GetChildren()) do
+    if tab:IsA("ScrollingFrame") then
+        tab:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+            tab.CanvasSize = UDim2.new(0, 0, 0, tab.UIListLayout.AbsoluteContentSize.Y + 20)
+        end)
+    end
+end
