@@ -448,4 +448,34 @@ for tn, t in pairs(tabButtons) do
     end
 end
 
+-- Update GUI elements positions and visibility every frame to ensure proper rendering
+RunService.RenderStepped:Connect(function()
+    if guiVisible then
+        -- Update window and title positions (in case of camera resize)
+        local newWindowPos = Vector2.new((Camera.ViewportSize.X - windowSize.X) / 2, (Camera.ViewportSize.Y - windowSize.Y) / 2)
+        window.Position = newWindowPos
+        title.Position = newWindowPos + Vector2.new(10, 10)
+
+        -- Update tabs positions
+        for i, tabName in ipairs(tabs) do
+            local tab = tabButtons[tabName]
+            tab.button.Position = Vector2.new(newWindowPos.X + 10 + (i-1)*(tabWidth + 10), newWindowPos.Y + 40)
+            tab.text.Position = tab.button.Position + Vector2.new(10, 5)
+        end
+
+        -- Update universal options positions
+        for i, optionName in ipairs({"fly", "walkspeed", "esp", "aimbot", "infiniteJump"}) do
+            local option = universalOptions[optionName]
+            option.box.Position = Vector2.new(newWindowPos.X + 10, newWindowPos.Y + 80 + (i-1)*30)
+            option.check.Position = option.box.Position + Vector2.new(3, 0)
+            option.label.Position = Vector2.new(option.box.Position.X + 30, option.box.Position.Y - 2)
+        end
+
+        -- Update walkspeed slider and handle positions
+        walkspeedSlider.Position = Vector2.new(newWindowPos.X + 110, newWindowPos.Y + 110)
+        walkspeedHandle.Position = Vector2.new(walkspeedSlider.Position.X + ((walkspeedValue - 16) / 84) * walkspeedSlider.Size.X - walkspeedHandle.Size.X/2, walkspeedSlider.Position.Y)
+        walkspeedValueText.Position = Vector2.new(walkspeedSlider.Position.X + walkspeedSlider.Size.X + 10, walkspeedSlider.Position.Y - 2)
+    end
+end)
+
 print("RLK HUB script loaded, press RightShift to toggle GUI")
