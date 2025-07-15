@@ -1,4 +1,4 @@
--- RLK HUB - Modern Roblox Lua client script for Swift PC executor with GUI tabs and features
+-- RLK HUB - Roblox Lua client script with modern GUI using Roblox GUI objects
 -- Features: Fly, Walkspeed, ESP, Aimbot, Infinite Jump, GUI toggle, Notifications
 
 local Players = game:GetService("Players")
@@ -7,13 +7,10 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local Camera = Workspace.CurrentCamera
+local StarterGui = game:GetService("StarterGui")
 
 -- Wait for character and camera to load
 repeat wait() until LocalPlayer and LocalPlayer.Character and Camera
-
--- GUI state
-local guiVisible = false
-local currentTab = "Steal a brainrot"
 
 -- Feature states
 local flyEnabled = false
@@ -31,150 +28,269 @@ local infiniteJumpEnabled = false
 
 -- Notifications
 local function notify(text)
-    print("[RLK HUB Notification] "..text)
-    -- Could add Drawing API notification here if desired
+    StarterGui:SetCore("SendNotification", {
+        Title = "RLK HUB";
+        Text = text;
+        Duration = 3;
+    })
 end
 
--- Create Drawing API GUI elements
-local Drawing = Drawing
+-- Create main ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RLKHubGui"
+screenGui.ResetOnSpawn = false
+screenGui.Enabled = false
+screenGui.Parent = game.CoreGui or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
--- Main window
-local windowSize = Vector2.new(400, 300)
-local windowPos = Vector2.new((Camera.ViewportSize.X - windowSize.X) / 2, (Camera.ViewportSize.Y - windowSize.Y) / 2)
+-- Main frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
 
-local window = Drawing.new("Square")
-window.Size = windowSize
-window.Position = windowPos
-window.Color = Color3.fromRGB(30, 30, 30)
-window.Filled = true
-window.Visible = false
-window.Transparency = 0.9
-window.ZIndex = 999
+-- Title label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+titleLabel.BorderSizePixel = 0
+titleLabel.Text = "RLK HUB"
+titleLabel.TextColor3 = Color3.new(1,1,1)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 24
+titleLabel.Parent = mainFrame
 
--- Title text
-local title = Drawing.new("Text")
-title.Text = "RLK HUB"
-title.Size = 24
-title.Position = windowPos + Vector2.new(10, 10)
-title.Color = Color3.fromRGB(255, 255, 255)
-title.Visible = false
-title.Center = false
-title.Outline = true
-title.OutlineColor = Color3.new(0, 0, 0)
-title.ZIndex = 1000
+-- Tabs frame
+local tabsFrame = Instance.new("Frame")
+tabsFrame.Size = UDim2.new(1, 0, 0, 40)
+tabsFrame.Position = UDim2.new(0, 0, 0, 40)
+tabsFrame.BackgroundTransparency = 1
+tabsFrame.Parent = mainFrame
 
--- Tabs
 local tabs = {"Steal a brainrot", "#1 game", "Universal"}
+local currentTab = "Steal a brainrot"
 local tabButtons = {}
 
-local tabStartX = windowPos.X + 10
-local tabStartY = windowPos.Y + 40
-local tabWidth = 120
-local tabHeight = 30
-
-for i, tabName in ipairs(tabs) do
-    local tabButton = Drawing.new("Square")
-    tabButton.Size = Vector2.new(tabWidth, tabHeight)
-    tabButton.Position = Vector2.new(tabStartX + (i-1)*(tabWidth + 10), tabStartY)
-    tabButton.Color = Color3.fromRGB(50, 50, 50)
-    tabButton.Filled = true
-    tabButton.Visible = false
-    tabButton.Transparency = 0.9
-    tabButton.ZIndex = 1000
-
-    local tabText = Drawing.new("Text")
-    tabText.Text = tabName
-    tabText.Size = 18
-    tabText.Position = tabButton.Position + Vector2.new(10, 5)
-    tabText.Color = Color3.fromRGB(255, 255, 255)
-    tabText.Visible = false
-    tabText.Center = false
-    tabText.Outline = true
-    tabText.OutlineColor = Color3.new(0, 0, 0)
-    tabText.ZIndex = 1001
-
-    tabButtons[tabName] = {button = tabButton, text = tabText}
+local function clearContent()
+    for _, child in pairs(mainFrame:GetChildren()) do
+        if child.Name == "Content" then
+            child:Destroy()
+        end
+    end
 end
 
--- Content area
-local contentStartX = windowPos.X + 10
-local contentStartY = windowPos.Y + 80
-local contentWidth = windowSize.X - 20
-local contentHeight = windowSize.Y - 90
+local function createTabButton(name, position)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 130, 1, 0)
+    button.Position = position
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.BorderSizePixel = 0
+    button.Text = name
+    button.TextColor3 = Color3.new(1,1,1)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 18
+    button.Parent = tabsFrame
 
--- Universal tab options UI elements
-local universalOptions = {}
+    button.MouseButton1Click:Connect(function()
+        currentTab = name
+        updateTabs()
+        updateContent()
+    end)
 
-local function createToggleOption(name, posY)
-    local box = Drawing.new("Square")
-    box.Size = Vector2.new(20, 20)
-    box.Position = Vector2.new(contentStartX, contentStartY + posY)
-    box.Color = Color3.fromRGB(70, 70, 70)
-    box.Filled = true
-    box.Visible = false
-    box.Transparency = 0.9
-    box.ZIndex = 1000
-
-    local check = Drawing.new("Text")
-    check.Text = ""
-    check.Size = 18
-    check.Position = box.Position + Vector2.new(3, 0)
-    check.Color = Color3.fromRGB(0, 255, 0)
-    check.Visible = false
-    check.Center = false
-    check.Outline = true
-    check.OutlineColor = Color3.new(0, 0, 0)
-    check.ZIndex = 1001
-
-    local label = Drawing.new("Text")
-    label.Text = name
-    label.Size = 18
-    label.Position = Vector2.new(box.Position.X + 30, box.Position.Y - 2)
-    label.Color = Color3.fromRGB(255, 255, 255)
-    label.Visible = false
-    label.Center = false
-    label.Outline = true
-    label.OutlineColor = Color3.new(0, 0, 0)
-    label.ZIndex = 1001
-
-    return {box = box, check = check, label = label, state = false}
+    return button
 end
 
-universalOptions.fly = createToggleOption("Fly", 0)
-universalOptions.walkspeed = createToggleOption("Walkspeed", 30)
-universalOptions.esp = createToggleOption("ESP", 60)
-universalOptions.aimbot = createToggleOption("Aimbot", 90)
-universalOptions.infiniteJump = createToggleOption("Infinite Jump", 120)
+local function updateTabs()
+    for name, button in pairs(tabButtons) do
+        if name == currentTab then
+            button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        else
+            button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        end
+    end
+end
 
--- Walkspeed slider UI
-local walkspeedSlider = Drawing.new("Square")
-walkspeedSlider.Size = Vector2.new(150, 20)
-walkspeedSlider.Position = Vector2.new(contentStartX + 100, contentStartY + 30)
-walkspeedSlider.Color = Color3.fromRGB(70, 70, 70)
-walkspeedSlider.Filled = true
-walkspeedSlider.Visible = false
-walkspeedSlider.Transparency = 0.9
-walkspeedSlider.ZIndex = 1000
+local function createToggle(parent, text, position, initialState, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -20, 0, 30)
+    frame.Position = position
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
 
-local walkspeedHandle = Drawing.new("Square")
-walkspeedHandle.Size = Vector2.new(10, 20)
-walkspeedHandle.Position = walkspeedSlider.Position
-walkspeedHandle.Color = Color3.fromRGB(0, 255, 0)
-walkspeedHandle.Filled = true
-walkspeedHandle.Visible = false
-walkspeedHandle.Transparency = 0.9
-walkspeedHandle.ZIndex = 1001
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1,1,1)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 18
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
 
-local walkspeedValueText = Drawing.new("Text")
-walkspeedValueText.Text = tostring(walkspeedValue)
-walkspeedValueText.Size = 18
-walkspeedValueText.Position = Vector2.new(walkspeedSlider.Position.X + walkspeedSlider.Size.X + 10, walkspeedSlider.Position.Y - 2)
-walkspeedValueText.Color = Color3.fromRGB(255, 255, 255)
-walkspeedValueText.Visible = false
-walkspeedValueText.Center = false
-walkspeedValueText.Outline = true
-walkspeedValueText.OutlineColor = Color3.new(0, 0, 0)
-walkspeedValueText.ZIndex = 1001
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 50, 0, 25)
+    toggle.Position = UDim2.new(1, -50, 0, 2)
+    toggle.BackgroundColor3 = initialState and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(150, 0, 0)
+    toggle.BorderSizePixel = 0
+    toggle.Text = initialState and "ON" or "OFF"
+    toggle.TextColor3 = Color3.new(1,1,1)
+    toggle.Font = Enum.Font.GothamBold
+    toggle.TextSize = 16
+    toggle.Parent = frame
+
+    toggle.MouseButton1Click:Connect(function()
+        local newState = not (toggle.Text == "ON")
+        toggle.Text = newState and "ON" or "OFF"
+        toggle.BackgroundColor3 = newState and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(150, 0, 0)
+        callback(newState)
+    end)
+
+    return frame
+end
+
+local function createSlider(parent, text, position, min, max, initialValue, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -20, 0, 40)
+    frame.Position = position
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 0, 20)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1,1,1)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 18
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(1, 0, 0, 15)
+    sliderFrame.Position = UDim2.new(0, 0, 0, 25)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = frame
+
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Size = UDim2.new(0, 20, 1, 0)
+    sliderButton.Position = UDim2.new((initialValue - min) / (max - min), 0, 0, 0)
+    sliderButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    sliderButton.BorderSizePixel = 0
+    sliderButton.Text = ""
+    sliderButton.Parent = sliderFrame
+
+    local dragging = false
+
+    sliderButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    sliderButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    sliderFrame.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativeX = math.clamp(input.Position.X - sliderFrame.AbsolutePosition.X, 0, sliderFrame.AbsoluteSize.X)
+            local value = min + (relativeX / sliderFrame.AbsoluteSize.X) * (max - min)
+            value = math.floor(value)
+            sliderButton.Position = UDim2.new((value - min) / (max - min), 0, 0, 0)
+            callback(value)
+        end
+    end)
+
+    return frame
+end
+
+local function updateContent()
+    clearContent()
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name = "Content"
+    contentFrame.Size = UDim2.new(1, -20, 1, -90)
+    contentFrame.Position = UDim2.new(0, 10, 0, 90)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = mainFrame
+
+    if currentTab == "Steal a brainrot" then
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "Steal a brainrot tab content placeholder"
+        label.TextColor3 = Color3.new(1,1,1)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 20
+        label.Parent = contentFrame
+    elseif currentTab == "#1 game" then
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "#1 game tab content placeholder"
+        label.TextColor3 = Color3.new(1,1,1)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 20
+        label.Parent = contentFrame
+    elseif currentTab == "Universal" then
+        -- Fly toggle
+        createToggle(contentFrame, "Fly", UDim2.new(0, 0, 0, 0), flyEnabled, function(state)
+            flyEnabled = state
+            if flyEnabled then
+                enableFly()
+            else
+                if bodyVelocity then
+                    bodyVelocity:Destroy()
+                    bodyVelocity = nil
+                end
+                notify("Fly disabled")
+            end
+        end)
+
+        -- Walkspeed toggle
+        createToggle(contentFrame, "Walkspeed", UDim2.new(0, 0, 0, 40), walkspeedEnabled, function(state)
+            walkspeedEnabled = state
+            if walkspeedEnabled then
+                setWalkspeed(walkspeedValue)
+            else
+                setWalkspeed(16)
+            end
+        end)
+
+        -- Walkspeed slider
+        createSlider(contentFrame, "Walkspeed Value", UDim2.new(0, 0, 0, 80), 16, 100, walkspeedValue, function(value)
+            walkspeedValue = value
+            if walkspeedEnabled then
+                setWalkspeed(walkspeedValue)
+            end
+        end)
+
+        -- ESP toggle
+        createToggle(contentFrame, "ESP", UDim2.new(0, 0, 0, 120), espEnabled, function(state)
+            espEnabled = state
+            if espEnabled then
+                enableESP()
+            else
+                disableESP()
+            end
+        end)
+
+        -- Aimbot toggle
+        createToggle(contentFrame, "Aimbot", UDim2.new(0, 0, 0, 160), aimbotEnabled, function(state)
+            aimbotEnabled = state
+        end)
+
+        -- Infinite Jump toggle
+        createToggle(contentFrame, "Infinite Jump", UDim2.new(0, 0, 0, 200), infiniteJumpEnabled, function(state)
+            infiniteJumpEnabled = state
+        end)
+    end
+end
 
 -- Fly functions
 local function enableFly()
@@ -188,14 +304,6 @@ local function enableFly()
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
     notify("Fly enabled")
-end
-
-local function disableFly()
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-        notify("Fly disabled")
-    end
 end
 
 -- Fly movement control
@@ -314,168 +422,18 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
-        guiVisible = not guiVisible
-        window.Visible = guiVisible
-        title.Visible = guiVisible
-        for _, tab in pairs(tabButtons) do
-            tab.button.Visible = guiVisible
-            tab.text.Visible = guiVisible
-        end
-        for _, option in pairs(universalOptions) do
-            option.box.Visible = false
-            option.check.Visible = false
-            option.label.Visible = false
-        end
-        walkspeedSlider.Visible = false
-        walkspeedHandle.Visible = false
-        walkspeedValueText.Visible = false
-        if guiVisible and currentTab == "Universal" then
-            for _, option in pairs(universalOptions) do
-                option.box.Visible = true
-                option.check.Visible = option.state
-                option.label.Visible = true
-            end
-            walkspeedSlider.Visible = true
-            walkspeedHandle.Visible = true
-            walkspeedValueText.Visible = true
-        end
-        notify("GUI toggled: "..tostring(guiVisible))
+        screenGui.Enabled = not screenGui.Enabled
+        notify("GUI toggled: "..tostring(screenGui.Enabled))
     end
 end)
 
--- Tab click detection
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if guiVisible and input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-        -- Check tabs
-        for tabName, tab in pairs(tabButtons) do
-            local pos = tab.button.Position
-            local size = tab.button.Size
-            if mousePos.X >= pos.X and mousePos.X <= pos.X + size.X and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y then
-                currentTab = tabName
-                -- Update tab colors
-                for tn, t in pairs(tabButtons) do
-                    if tn == currentTab then
-                        t.button.Color = Color3.fromRGB(100, 100, 100)
-                    else
-                        t.button.Color = Color3.fromRGB(50, 50, 50)
-                    end
-                end
-                -- Update visible options
-                for _, option in pairs(universalOptions) do
-                    option.box.Visible = false
-                    option.check.Visible = false
-                    option.label.Visible = false
-                end
-                walkspeedSlider.Visible = false
-                walkspeedHandle.Visible = false
-                walkspeedValueText.Visible = false
-                if currentTab == "Universal" then
-                    for _, option in pairs(universalOptions) do
-                        option.box.Visible = true
-                        option.check.Visible = option.state
-                        option.label.Visible = true
-                    end
-                    walkspeedSlider.Visible = true
-                    walkspeedHandle.Visible = true
-                    walkspeedValueText.Visible = true
-                end
-                notify("Switched to tab: "..currentTab)
-                break
-            end
-        end
-        -- Check universal options toggle boxes
-        if currentTab == "Universal" then
-            for name, option in pairs(universalOptions) do
-                local pos = option.box.Position
-                local size = option.box.Size
-                if mousePos.X >= pos.X and mousePos.X <= pos.X + size.X and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y then
-                    option.state = not option.state
-                    option.check.Text = option.state and "✔" or ""
-                    option.check.Visible = option.state
-                    -- Apply feature state changes
-                    if name == "fly" then
-                        flyEnabled = option.state
-                        if flyEnabled then enableFly() else disableFly() end
-                    elseif name == "walkspeed" then
-                        walkspeedEnabled = option.state
-                        if walkspeedEnabled then
-                            setWalkspeed(walkspeedValue)
-                        else
-                            setWalkspeed(16)
-                        end
-                    elseif name == "esp" then
-                        espEnabled = option.state
-                        if espEnabled then enableESP() else disableESP() end
-                    elseif name == "aimbot" then
-                        aimbotEnabled = option.state
-                    elseif name == "infiniteJump" then
-                        infiniteJumpEnabled = option.state
-                    end
-                    notify(name.." toggled: "..tostring(option.state))
-                    break
-                end
-            end
-        end
-        -- Check walkspeed slider drag
-        if currentTab == "Universal" then
-            local sliderPos = walkspeedSlider.Position
-            local sliderSize = walkspeedSlider.Size
-            if mousePos.X >= sliderPos.X and mousePos.X <= sliderPos.X + sliderSize.X and mousePos.Y >= sliderPos.Y and mousePos.Y <= sliderPos.Y + sliderSize.Y then
-                local relativeX = mousePos.X - sliderPos.X
-                local newSpeed = math.floor((relativeX / sliderSize.X) * 100)
-                if newSpeed < 16 then newSpeed = 16 end
-                if newSpeed > 100 then newSpeed = 100 end
-                walkspeedValue = newSpeed
-                walkspeedValueText.Text = tostring(walkspeedValue)
-                walkspeedHandle.Position = Vector2.new(sliderPos.X + (relativeX - walkspeedHandle.Size.X/2), sliderPos.Y)
-                if walkspeedEnabled then
-                    setWalkspeed(walkspeedValue)
-                end
-                notify("Walkspeed set to "..walkspeedValue)
-            end
-        end
-    end
-end)
-
--- Initialize tab colors
-for tn, t in pairs(tabButtons) do
-    if tn == currentTab then
-        t.button.Color = Color3.fromRGB(100, 100, 100)
-    else
-        t.button.Color = Color3.fromRGB(50, 50, 50)
-    end
+-- Initialize tabs
+for i, tabName in ipairs(tabs) do
+    local pos = UDim2.new(0, (i-1)*135, 0, 0)
+    tabButtons[tabName] = createTabButton(tabName, pos)
 end
 
--- Update GUI elements positions and visibility every frame to ensure proper rendering
-RunService.RenderStepped:Connect(function()
-    if guiVisible then
-        -- Update window and title positions (in case of camera resize)
-        local newWindowPos = Vector2.new((Camera.ViewportSize.X - windowSize.X) / 2, (Camera.ViewportSize.Y - windowSize.Y) / 2)
-        window.Position = newWindowPos
-        title.Position = newWindowPos + Vector2.new(10, 10)
-
-        -- Update tabs positions
-        for i, tabName in ipairs(tabs) do
-            local tab = tabButtons[tabName]
-            tab.button.Position = Vector2.new(newWindowPos.X + 10 + (i-1)*(tabWidth + 10), newWindowPos.Y + 40)
-            tab.text.Position = tab.button.Position + Vector2.new(10, 5)
-        end
-
-        -- Update universal options positions
-        for i, optionName in ipairs({"fly", "walkspeed", "esp", "aimbot", "infiniteJump"}) do
-            local option = universalOptions[optionName]
-            option.box.Position = Vector2.new(newWindowPos.X + 10, newWindowPos.Y + 80 + (i-1)*30)
-            option.check.Position = option.box.Position + Vector2.new(3, 0)
-            option.label.Position = Vector2.new(option.box.Position.X + 30, option.box.Position.Y - 2)
-        end
-
-        -- Update walkspeed slider and handle positions
-        walkspeedSlider.Position = Vector2.new(newWindowPos.X + 110, newWindowPos.Y + 110)
-        walkspeedHandle.Position = Vector2.new(walkspeedSlider.Position.X + ((walkspeedValue - 16) / 84) * walkspeedSlider.Size.X - walkspeedHandle.Size.X/2, walkspeedSlider.Position.Y)
-        walkspeedValueText.Position = Vector2.new(walkspeedSlider.Position.X + walkspeedSlider.Size.X + 10, walkspeedSlider.Position.Y - 2)
-    end
-end)
+updateTabs()
+updateContent()
 
 print("RLK HUB script loaded, press RightShift to toggle GUI")
