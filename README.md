@@ -1,555 +1,451 @@
--- Features completas: ESP, Hitbox Expander, Aimbot, AutoFarm
+-- RLK HUB - Modern Roblox Lua client script for Swift PC executor with GUI tabs and features
+-- Features: Fly, Walkspeed, ESP, Aimbot, Infinite Jump, GUI toggle, Notifications
 
---[[
-  INSTRUÇÕES:
-  1. Copie todo este script
-  2. Cole no seu executor mobile (Delta, Hydrogen, Fluxus)
-  3. Execute
-  4. A GUI aparecerá na tela com controles touch-friendly
-]]
-
--- Serviços
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
--- Configurações
-local Settings = {
-    ESP = {
-        Enabled = false,
-        Color = Color3.fromRGB(255, 50, 50),
-        TeamCheck = true
-    },
-    Hitbox = {
-        Enabled = false,
-        Size = Vector3.new(5, 5, 5),
-        OriginalSize = Vector3.new(2, 2, 1)
-    },
-    Aimbot = {
-        Enabled = false,
-        Target = nil,
-        Smoothness = 0.2,
-        FOV = 100,
-        TeamCheck = true
-    },
-    AutoFarm = {
-        Enabled = false,
-        Delay = 0.5
-    }
-}
+-- Wait for character and camera to load
+repeat wait() until LocalPlayer and LocalPlayer.Character and Camera
 
--- Variáveis de controle
-local GUIEnabled = true
-local Dragging, DragInput, DragStart, StartPos
-local ESPInstances = {}
-local HitboxInstances = {}
+-- GUI state
+local guiVisible = false
+local currentTab = "Steal a brainrot"
 
--- Cria a GUI principal
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GFAMobileGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Feature states
+local flyEnabled = false
+local flySpeed = 50
+local bodyVelocity
 
--- Frame principal
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-MainFrame.BackgroundTransparency = 0.2
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui  -- Fix: Parent MainFrame to ScreenGui
+local walkspeedEnabled = false
+local walkspeedValue = 16
 
--- Efeito de borda
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 8)
-UICorner.Parent = MainFrame
+local espEnabled = false
+local espHighlights = {}
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(80, 80, 100)
-UIStroke.Thickness = 2
-UIStroke.Parent = MainFrame
+local aimbotEnabled = false
+local infiniteJumpEnabled = false
 
--- Barra de título
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
-TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
+-- Notifications
+local function notify(text)
+    print("[RLK HUB Notification] "..text)
+    -- Could add Drawing API notification here if desired
+end
 
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Name = "TitleLabel"
-TitleLabel.Size = UDim2.new(1, -40, 1, 0)
-TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "GF Arena Mobile"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.TextSize = 18
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Parent = TitleBar
+-- Create Drawing API GUI elements
+local Drawing = Drawing
 
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
-CloseButton.AnchorPoint = Vector2.new(0.5, 0.5)
-CloseButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 16
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Parent = TitleBar
+-- Main window
+local windowSize = Vector2.new(400, 300)
+local windowPos = Vector2.new((Camera.ViewportSize.X - windowSize.X) / 2, (Camera.ViewportSize.Y - windowSize.Y) / 2)
+
+local window = Drawing.new("Square")
+window.Size = windowSize
+window.Position = windowPos
+window.Color = Color3.fromRGB(30, 30, 30)
+window.Filled = true
+window.Visible = false
+window.Transparency = 0.9
+window.ZIndex = 999
+
+-- Title text
+local title = Drawing.new("Text")
+title.Text = "RLK HUB"
+title.Size = 24
+title.Position = windowPos + Vector2.new(10, 10)
+title.Color = Color3.fromRGB(255, 255, 255)
+title.Visible = false
+title.Center = false
+title.Outline = true
+title.OutlineColor = Color3.new(0, 0, 0)
+title.ZIndex = 1000
 
 -- Tabs
-local Tabs = {"Visual", "Combate", "Farm"}
-local CurrentTab = "Visual"
+local tabs = {"Steal a brainrot", "#1 game", "Universal"}
+local tabButtons = {}
 
-local TabButtons = {}
-local TabFrames = {}
+local tabStartX = windowPos.X + 10
+local tabStartY = windowPos.Y + 40
+local tabWidth = 120
+local tabHeight = 30
 
-local TabButtonsFrame = Instance.new("Frame")
-TabButtonsFrame.Name = "TabButtonsFrame"
-TabButtonsFrame.Size = UDim2.new(1, 0, 0, 40)
-TabButtonsFrame.Position = UDim2.new(0, 0, 0, 40)
-TabButtonsFrame.BackgroundTransparency = 1
-TabButtonsFrame.Parent = MainFrame
+for i, tabName in ipairs(tabs) do
+    local tabButton = Drawing.new("Square")
+    tabButton.Size = Vector2.new(tabWidth, tabHeight)
+    tabButton.Position = Vector2.new(tabStartX + (i-1)*(tabWidth + 10), tabStartY)
+    tabButton.Color = Color3.fromRGB(50, 50, 50)
+    tabButton.Filled = true
+    tabButton.Visible = false
+    tabButton.Transparency = 0.9
+    tabButton.ZIndex = 1000
 
-for i, tabName in ipairs(Tabs) do
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = tabName.."TabButton"
-    TabButton.Size = UDim2.new(1/#Tabs, -5, 1, -5)
-    TabButton.Position = UDim2.new((i-1)/#Tabs, 2, 0, 2)
-    TabButton.BackgroundColor3 = i == 1 and Color3.fromRGB(60, 60, 80) or Color3.fromRGB(40, 40, 50)
-    TabButton.Text = tabName
-    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabButton.TextSize = 14
-    TabButton.Font = Enum.Font.Gotham
-    TabButton.Parent = TabButtonsFrame
-    
-    local TabFrame = Instance.new("Frame")
-    TabFrame.Name = tabName.."TabFrame"
-    TabFrame.Size = UDim2.new(1, -20, 1, -90)
-    TabFrame.Position = UDim2.new(0, 10, 0, 85)
-    TabFrame.BackgroundTransparency = 1
-    TabFrame.Visible = i == 1
-    TabFrame.Parent = MainFrame
-    
-    TabButtons[tabName] = TabButton
-    TabFrames[tabName] = TabFrame
-    
-    TabButton.MouseButton1Click:Connect(function()
-        CurrentTab = tabName
-        for name, frame in pairs(TabFrames) do
-            frame.Visible = name == tabName
-        end
-        for name, button in pairs(TabButtons) do
-            button.BackgroundColor3 = name == tabName and Color3.fromRGB(60, 60, 80) or Color3.fromRGB(40, 40, 50)
-        end
-    end)
+    local tabText = Drawing.new("Text")
+    tabText.Text = tabName
+    tabText.Size = 18
+    tabText.Position = tabButton.Position + Vector2.new(10, 5)
+    tabText.Color = Color3.fromRGB(255, 255, 255)
+    tabText.Visible = false
+    tabText.Center = false
+    tabText.Outline = true
+    tabText.OutlineColor = Color3.new(0, 0, 0)
+    tabText.ZIndex = 1001
+
+    tabButtons[tabName] = {button = tabButton, text = tabText}
 end
 
--- Função para criar toggles
-local function CreateToggle(parent, name, default, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Name = name.."ToggleFrame"
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 40)
-    ToggleFrame.BackgroundTransparency = 1
-    ToggleFrame.Parent = parent
-    
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Name = name.."ToggleButton"
-    ToggleButton.Size = UDim2.new(0, 120, 0, 30)
-    ToggleButton.Position = UDim2.new(0, 0, 0.5, -15)
-    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(60, 150, 60) or Color3.fromRGB(150, 60, 60)
-    ToggleButton.Text = name .. ": " .. (default and "ON" or "OFF")
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 14
-    ToggleButton.Font = Enum.Font.Gotham
-    ToggleButton.Parent = ToggleFrame
-    
-    local Value = default
-    
-    ToggleButton.MouseButton1Click:Connect(function()
-        Value = not Value
-        ToggleButton.BackgroundColor3 = Value and Color3.fromRGB(60, 150, 60) or Color3.fromRGB(150, 60, 60)
-        ToggleButton.Text = name .. ": " .. (Value and "ON" or "OFF")
-        callback(Value)
-    end)
-    
-    return {
-        SetValue = function(newValue)
-            Value = newValue
-            ToggleButton.BackgroundColor3 = Value and Color3.fromRGB(60, 150, 60) or Color3.fromRGB(150, 60, 60)
-            ToggleButton.Text = name .. ": " .. (Value and "ON" or "OFF")
-            callback(Value)
-        end
-    }
+-- Content area
+local contentStartX = windowPos.X + 10
+local contentStartY = windowPos.Y + 80
+local contentWidth = windowSize.X - 20
+local contentHeight = windowSize.Y - 90
+
+-- Universal tab options UI elements
+local universalOptions = {}
+
+local function createToggleOption(name, posY)
+    local box = Drawing.new("Square")
+    box.Size = Vector2.new(20, 20)
+    box.Position = Vector2.new(contentStartX, contentStartY + posY)
+    box.Color = Color3.fromRGB(70, 70, 70)
+    box.Filled = true
+    box.Visible = false
+    box.Transparency = 0.9
+    box.ZIndex = 1000
+
+    local check = Drawing.new("Text")
+    check.Text = ""
+    check.Size = 18
+    check.Position = box.Position + Vector2.new(3, 0)
+    check.Color = Color3.fromRGB(0, 255, 0)
+    check.Visible = false
+    check.Center = false
+    check.Outline = true
+    check.OutlineColor = Color3.new(0, 0, 0)
+    check.ZIndex = 1001
+
+    local label = Drawing.new("Text")
+    label.Text = name
+    label.Size = 18
+    label.Position = Vector2.new(box.Position.X + 30, box.Position.Y - 2)
+    label.Color = Color3.fromRGB(255, 255, 255)
+    label.Visible = false
+    label.Center = false
+    label.Outline = true
+    label.OutlineColor = Color3.new(0, 0, 0)
+    label.ZIndex = 1001
+
+    return {box = box, check = check, label = label, state = false}
 end
 
--- Função para criar sliders
-local function CreateSlider(parent, name, min, max, default, callback)
-    local SliderFrame = Instance.new("Frame")
-    SliderFrame.Name = name.."SliderFrame"
-    SliderFrame.Size = UDim2.new(1, 0, 0, 60)
-    SliderFrame.BackgroundTransparency = 1
-    SliderFrame.Parent = parent
-    
-    local SliderName = Instance.new("TextLabel")
-    SliderName.Name = name.."SliderName"
-    SliderName.Size = UDim2.new(1, 0, 0, 20)
-    SliderName.Position = UDim2.new(0, 0, 0, 0)
-    SliderName.BackgroundTransparency = 1
-    SliderName.Text = name .. ": " .. default
-    SliderName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SliderName.TextSize = 14
-    SliderName.TextXAlignment = Enum.TextXAlignment.Left
-    SliderName.Font = Enum.Font.Gotham
-    SliderName.Parent = SliderFrame
-    
-    local SliderTrack = Instance.new("Frame")
-    SliderTrack.Name = name.."SliderTrack"
-    SliderTrack.Size = UDim2.new(1, 0, 0, 10)
-    SliderTrack.Position = UDim2.new(0, 0, 0, 30)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    SliderTrack.BorderSizePixel = 0
-    SliderTrack.Parent = SliderFrame
-    
-    local SliderThumb = Instance.new("Frame")
-    SliderThumb.Name = name.."SliderThumb"
-    SliderThumb.Size = UDim2.new(0, 20, 0, 20)
-    SliderThumb.Position = UDim2.new((default - min)/(max - min), -5, 0, -5)
-    SliderThumb.AnchorPoint = Vector2.new(0.5, 0.5)
-    SliderThumb.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
-    SliderThumb.BorderSizePixel = 0
-    SliderThumb.Parent = SliderTrack
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(1, 0)
-    UICorner.Parent = SliderThumb
-    
-    local Dragging = false
-    
-    local function UpdateValue(input)
-        local relativeX = (input.Position.X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X
-        local value = math.clamp(min + (max - min) * relativeX, min, max)
-        local rounded = math.floor(value * 10) / 10
-        
-        SliderThumb.Position = UDim2.new((value - min)/(max - min), -5, 0, -5)
-        SliderName.Text = name .. ": " .. rounded
-        callback(rounded)
-    end
-    
-    SliderThumb.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
-                end
-            end)
-        end
-    end)
-    
-    SliderTrack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            UpdateValue(input)
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            UpdateValue(input)
-        end
-    end)
+universalOptions.fly = createToggleOption("Fly", 0)
+universalOptions.walkspeed = createToggleOption("Walkspeed", 30)
+universalOptions.esp = createToggleOption("ESP", 60)
+universalOptions.aimbot = createToggleOption("Aimbot", 90)
+universalOptions.infiniteJump = createToggleOption("Infinite Jump", 120)
+
+-- Walkspeed slider UI
+local walkspeedSlider = Drawing.new("Square")
+walkspeedSlider.Size = Vector2.new(150, 20)
+walkspeedSlider.Position = Vector2.new(contentStartX + 100, contentStartY + 30)
+walkspeedSlider.Color = Color3.fromRGB(70, 70, 70)
+walkspeedSlider.Filled = true
+walkspeedSlider.Visible = false
+walkspeedSlider.Transparency = 0.9
+walkspeedSlider.ZIndex = 1000
+
+local walkspeedHandle = Drawing.new("Square")
+walkspeedHandle.Size = Vector2.new(10, 20)
+walkspeedHandle.Position = walkspeedSlider.Position
+walkspeedHandle.Color = Color3.fromRGB(0, 255, 0)
+walkspeedHandle.Filled = true
+walkspeedHandle.Visible = false
+walkspeedHandle.Transparency = 0.9
+walkspeedHandle.ZIndex = 1001
+
+local walkspeedValueText = Drawing.new("Text")
+walkspeedValueText.Text = tostring(walkspeedValue)
+walkspeedValueText.Size = 18
+walkspeedValueText.Position = Vector2.new(walkspeedSlider.Position.X + walkspeedSlider.Size.X + 10, walkspeedSlider.Position.Y - 2)
+walkspeedValueText.Color = Color3.fromRGB(255, 255, 255)
+walkspeedValueText.Visible = false
+walkspeedValueText.Center = false
+walkspeedValueText.Outline = true
+walkspeedValueText.OutlineColor = Color3.new(0, 0, 0)
+walkspeedValueText.ZIndex = 1001
+
+-- Fly functions
+local function enableFly()
+    local character = LocalPlayer.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if bodyVelocity then bodyVelocity:Destroy() end
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = hrp
+    notify("Fly enabled")
 end
 
--- Cria os controles na GUI
-
--- Tab Visual
-local ESPToggle = CreateToggle(TabFrames.Visual, "ESP", false, function(value)
-    Settings.ESP.Enabled = value
-end)
-
-local HitboxToggle = CreateToggle(TabFrames.Visual, "Hitbox Expander", false, function(value)
-    Settings.Hitbox.Enabled = value
-end)
-
--- Tab Combate
-local AimbotToggle = CreateToggle(TabFrames.Combate, "Aimbot", false, function(value)
-    Settings.Aimbot.Enabled = value
-end)
-
-CreateSlider(TabFrames.Combate, "Suavidade", 0.1, 1, Settings.Aimbot.Smoothness, function(value)
-    Settings.Aimbot.Smoothness = value
-end)
-
-CreateSlider(TabFrames.Combate, "FOV", 50, 300, Settings.Aimbot.FOV, function(value)
-    Settings.Aimbot.FOV = value
-end)
-
--- Tab Farm
-local AutoFarmToggle = CreateToggle(TabFrames.Farm, "Auto Farm", false, function(value)
-    Settings.AutoFarm.Enabled = value
-end)
-
-CreateSlider(TabFrames.Farm, "Intervalo", 0.1, 5, Settings.AutoFarm.Delay, function(value)
-    Settings.AutoFarm.Delay = value
-end)
-
--- Função para arrastar a janela
-local function DragGUI(input)
-    local delta = input.Position - DragStart
-    local newPos = StartPos + UDim2.new(0, delta.X, 0, delta.Y)
-    
-    -- Limita a janela à área da tela
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    local newX = math.clamp(newPos.X.Offset, 0, viewportSize.X - MainFrame.AbsoluteSize.X)
-    local newY = math.clamp(newPos.Y.Offset, 0, viewportSize.Y - MainFrame.AbsoluteSize.Y)
-    MainFrame.Position = UDim2.new(0, newX, 0, newY)
-end
-
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        Dragging = true
-        DragStart = input.Position
-        StartPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                Dragging = false
-            end
-        end)
-    end
-end)
-
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and Dragging then
-        DragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == DragInput and Dragging then
-        DragGUI(input)
-    end
-end)
-
--- Botão de fechar
-CloseButton.MouseButton1Click:Connect(function()
-    GUIEnabled = false
-    ScreenGui:Destroy()
-end)
-
--- Adiciona a GUI ao PlayerGui
-if game:GetService("CoreGui"):FindFirstChild("GFAMobileGUI") then
-    game:GetService("CoreGui").GFAMobileGUI:Destroy()
-end
-ScreenGui.Parent = game:GetService("CoreGui")
-
--- Implementação das funcionalidades
-
--- ESP
-local function UpdateESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-                
-                if Settings.ESP.Enabled then
-                    if not ESPInstances[player] then
-                        local highlight = Instance.new("Highlight")
-                        highlight.Name = player.Name.."_ESP"
-                        highlight.FillColor = Settings.ESP.Color
-                        highlight.OutlineColor = Settings.ESP.Color
-                        highlight.FillTransparency = 0.5
-                        highlight.OutlineTransparency = 0
-                        highlight.Parent = character
-                        ESPInstances[player] = highlight
-                    else
-                        ESPInstances[player].FillColor = Settings.ESP.Color
-                        ESPInstances[player].OutlineColor = Settings.ESP.Color
-                        ESPInstances[player].Adornee = character
-                        ESPInstances[player].Parent = character
-                    end
-                else
-                    if ESPInstances[player] then
-                        ESPInstances[player]:Destroy()
-                        ESPInstances[player] = nil
-                    end
-                end
-            end
-        end
+local function disableFly()
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+        notify("Fly disabled")
     end
 end
 
--- Hitbox Expander
-local function UpdateHitboxes()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-                
-                if humanoidRootPart then
-                    if Settings.Hitbox.Enabled then
-                        humanoidRootPart.Size = Settings.Hitbox.Size
-                        humanoidRootPart.Transparency = 0.7
-                        humanoidRootPart.CanCollide = false
-                        HitboxInstances[player] = true
-                    else
-                        if HitboxInstances[player] then
-                            humanoidRootPart.Size = Settings.Hitbox.OriginalSize
-                            humanoidRootPart.Transparency = 0
-                            humanoidRootPart.CanCollide = true
-                            HitboxInstances[player] = nil
-                        end
-                    end
-                end
-            end
+-- Fly movement control
+RunService.Heartbeat:Connect(function()
+    if flyEnabled and bodyVelocity then
+        local direction = Vector3.new(0,0,0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            direction = direction + Camera.CFrame.LookVector
         end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            direction = direction - Camera.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            direction = direction - Camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            direction = direction + Camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            direction = direction + Vector3.new(0,1,0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            direction = direction - Vector3.new(0,1,0)
+        end
+        if direction.Magnitude > 0 then
+            bodyVelocity.Velocity = direction.Unit * flySpeed
+        else
+            bodyVelocity.Velocity = Vector3.new(0,0,0)
+        end
+    end
+end)
+
+-- Walkspeed control
+local function setWalkspeed(value)
+    local character = LocalPlayer.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = value
     end
 end
 
--- Aimbot
-local function FindClosestPlayer()
-    local closestPlayer, closestDistance = nil, Settings.Aimbot.FOV
-    
-    for _, player in ipairs(Players:GetPlayers()) do
+-- ESP functions
+local function createHighlight(player)
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = player.Character
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+    highlight.Parent = player.Character
+    return highlight
+end
+
+local function enableESP()
+    for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                local screenPoint = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-                if screenPoint.Z > 0 then -- Verifica se está na frente da câmera
-                    local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                    
-                    if distance < closestDistance then
-                        closestPlayer = player
-                        closestDistance = distance
-                    end
+            if not espHighlights[player] then
+                espHighlights[player] = createHighlight(player)
+            end
+        end
+    end
+    notify("ESP enabled")
+end
+
+local function disableESP()
+    for player, highlight in pairs(espHighlights) do
+        if highlight then
+            highlight:Destroy()
+        end
+    end
+    espHighlights = {}
+    notify("ESP disabled")
+end
+
+-- Aimbot functions
+local function getClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = player.Character.HumanoidRootPart.Position
+            local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+            if onScreen then
+                local mousePos = UserInputService:GetMouseLocation()
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    closestPlayer = player
                 end
             end
         end
     end
-    
     return closestPlayer
 end
 
-local function AimbotThread()
-    while Settings.Aimbot.Enabled and GUIEnabled do
-        task.wait()
-        
-        local targetPlayer = FindClosestPlayer()
-        if targetPlayer and targetPlayer.Character then
-            local targetPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if targetPart then
-                local camCFrame = Camera.CFrame
-                local targetPosition = targetPart.Position + Vector3.new(0, 1.5, 0) -- Ajuste para mirar no peito
-                local newCFrame = camCFrame:Lerp(CFrame.lookAt(camCFrame.Position, targetPosition), Settings.Aimbot.Smoothness)
-                Camera.CFrame = newCFrame
-            end
+RunService.Heartbeat:Connect(function()
+    if aimbotEnabled then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = target.Character.HumanoidRootPart
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, hrp.Position)
         end
     end
-end
+end)
 
-local function AutoFarmThread()
-    while Settings.AutoFarm.Enabled and GUIEnabled do
-        task.wait(Settings.AutoFarm.Delay)
-        
-        -- Implementação básica (ajuste para o jogo específico)
-        local character = LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                -- Simula ações de farm (substitua pela lógica real do jogo)
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                        if enemyRoot then
-                            -- Simula ataque (ajuste para o sistema de combate do jogo)
-                            humanoid:MoveTo(enemyRoot.Position)
-                            break
-                        end
+-- Infinite jump
+UserInputService.JumpRequest:Connect(function()
+    if infiniteJumpEnabled then
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- GUI toggle keybind (RightShift)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        guiVisible = not guiVisible
+        window.Visible = guiVisible
+        title.Visible = guiVisible
+        for _, tab in pairs(tabButtons) do
+            tab.button.Visible = guiVisible
+            tab.text.Visible = guiVisible
+        end
+        for _, option in pairs(universalOptions) do
+            option.box.Visible = false
+            option.check.Visible = false
+            option.label.Visible = false
+        end
+        walkspeedSlider.Visible = false
+        walkspeedHandle.Visible = false
+        walkspeedValueText.Visible = false
+        if guiVisible and currentTab == "Universal" then
+            for _, option in pairs(universalOptions) do
+                option.box.Visible = true
+                option.check.Visible = option.state
+                option.label.Visible = true
+            end
+            walkspeedSlider.Visible = true
+            walkspeedHandle.Visible = true
+            walkspeedValueText.Visible = true
+        end
+        notify("GUI toggled: "..tostring(guiVisible))
+    end
+end)
+
+-- Tab click detection
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if guiVisible and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+        -- Check tabs
+        for tabName, tab in pairs(tabButtons) do
+            local pos = tab.button.Position
+            local size = tab.button.Size
+            if mousePos.X >= pos.X and mousePos.X <= pos.X + size.X and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y then
+                currentTab = tabName
+                -- Update tab colors
+                for tn, t in pairs(tabButtons) do
+                    if tn == currentTab then
+                        t.button.Color = Color3.fromRGB(100, 100, 100)
+                    else
+                        t.button.Color = Color3.fromRGB(50, 50, 50)
                     end
+                end
+                -- Update visible options
+                for _, option in pairs(universalOptions) do
+                    option.box.Visible = false
+                    option.check.Visible = false
+                    option.label.Visible = false
+                end
+                walkspeedSlider.Visible = false
+                walkspeedHandle.Visible = false
+                walkspeedValueText.Visible = false
+                if currentTab == "Universal" then
+                    for _, option in pairs(universalOptions) do
+                        option.box.Visible = true
+                        option.check.Visible = option.state
+                        option.label.Visible = true
+                    end
+                    walkspeedSlider.Visible = true
+                    walkspeedHandle.Visible = true
+                    walkspeedValueText.Visible = true
+                end
+                notify("Switched to tab: "..currentTab)
+                break
+            end
+        end
+        -- Check universal options toggle boxes
+        if currentTab == "Universal" then
+            for name, option in pairs(universalOptions) do
+                local pos = option.box.Position
+                local size = option.box.Size
+                if mousePos.X >= pos.X and mousePos.X <= pos.X + size.X and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y then
+                    option.state = not option.state
+                    option.check.Text = option.state and "✔" or ""
+                    option.check.Visible = option.state
+                    -- Apply feature state changes
+                    if name == "fly" then
+                        flyEnabled = option.state
+                        if flyEnabled then enableFly() else disableFly() end
+                    elseif name == "walkspeed" then
+                        walkspeedEnabled = option.state
+                        if walkspeedEnabled then
+                            setWalkspeed(walkspeedValue)
+                        else
+                            setWalkspeed(16)
+                        end
+                    elseif name == "esp" then
+                        espEnabled = option.state
+                        if espEnabled then enableESP() else disableESP() end
+                    elseif name == "aimbot" then
+                        aimbotEnabled = option.state
+                    elseif name == "infiniteJump" then
+                        infiniteJumpEnabled = option.state
+                    end
+                    notify(name.." toggled: "..tostring(option.state))
+                    break
                 end
             end
         end
+        -- Check walkspeed slider drag
+        if currentTab == "Universal" then
+            local sliderPos = walkspeedSlider.Position
+            local sliderSize = walkspeedSlider.Size
+            if mousePos.X >= sliderPos.X and mousePos.X <= sliderPos.X + sliderSize.X and mousePos.Y >= sliderPos.Y and mousePos.Y <= sliderPos.Y + sliderSize.Y then
+                local relativeX = mousePos.X - sliderPos.X
+                local newSpeed = math.floor((relativeX / sliderSize.X) * 100)
+                if newSpeed < 16 then newSpeed = 16 end
+                if newSpeed > 100 then newSpeed = 100 end
+                walkspeedValue = newSpeed
+                walkspeedValueText.Text = tostring(walkspeedValue)
+                walkspeedHandle.Position = Vector2.new(sliderPos.X + (relativeX - walkspeedHandle.Size.X/2), sliderPos.Y)
+                if walkspeedEnabled then
+                    setWalkspeed(walkspeedValue)
+                end
+                notify("Walkspeed set to "..walkspeedValue)
+            end
+        end
+    end
+end)
+
+-- Initialize tab colors
+for tn, t in pairs(tabButtons) do
+    if tn == currentTab then
+        t.button.Color = Color3.fromRGB(100, 100, 100)
+    else
+        t.button.Color = Color3.fromRGB(50, 50, 50)
     end
 end
 
--- Conexões de eventos
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        if Settings.ESP.Enabled then UpdateESP() end
-        if Settings.Hitbox.Enabled then UpdateHitboxes() end
-    end)
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if ESPInstances[player] then
-        ESPInstances[player]:Destroy()
-        ESPInstances[player] = nil
-    end
-    HitboxInstances[player] = nil
-end)
-
--- Inicia threads quando ativadas
-spawn(function()
-    while GUIEnabled do
-        if Settings.Aimbot.Enabled then
-            AimbotThread()
-        end
-        wait(0.1)
-    end
-end)
-
-spawn(function()
-    while GUIEnabled do
-        if Settings.AutoFarm.Enabled then
-            AutoFarmThread()
-        end
-        wait(0.1)
-    end
-end)
-
--- Loop principal
-RunService.Heartbeat:Connect(function()
-    if not GUIEnabled then return end
-    
-    if Settings.ESP.Enabled then UpdateESP() end
-    if Settings.Hitbox.Enabled then UpdateHitboxes() end
-end)
-
--- Notificação inicial
-local Notification = Instance.new("TextLabel")
-Notification.Name = "StartNotification"
-Notification.Size = UDim2.new(0, 200, 0, 50)
-Notification.Position = UDim2.new(0.5, -100, 1, -100)
-Notification.AnchorPoint = Vector2.new(0.5, 0.5)
-Notification.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-Notification.BackgroundTransparency = 0.3
-Notification.Text = "GF Arena Mobile v2.0 Carregado!"
-Notification.TextColor3 = Color3.fromRGB(255, 255, 255)
-Notification.TextSize = 14
-Notification.Font = Enum.Font.GothamBold
-Notification.Parent = ScreenGui
-
--- Animação da notificação
-spawn(function()
-    wait(3)
-    local tween = TweenService:Create(
-        Notification,
-        TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {Position = UDim2.new(0.5, -100, 1, -150), BackgroundTransparency = 1, TextTransparency = 1}
-    )
-    tween:Play()
-    tween.Completed:Wait()
-    Notification:Destroy()
-end)
+print("RLK HUB script loaded, press RightShift to toggle GUI")
