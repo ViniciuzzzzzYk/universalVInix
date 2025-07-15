@@ -40,7 +40,8 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "RLKHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Enabled = false
-screenGui.Parent = game.CoreGui or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+print("RLK HUB GUI created and parented to PlayerGui")
 
 -- Main frame
 local mainFrame = Instance.new("Frame")
