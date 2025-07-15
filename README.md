@@ -34,6 +34,48 @@ TopBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
+-- Make TopBar draggable to move the GUI
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        updateDrag(input)
+    end
+end)
+
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(0, 200, 1, 0)
@@ -212,63 +254,125 @@ local function createToggle(parent, name, callback)
     }
 end
 
--- Fly Feature
+-- Fly Feature with adjustable speed
+local flySpeed = 50
+local flyBodyVelocity
+local flyConnection
+
 local flyToggle = createToggle(MovementTab, "Fly", function(state)
     if state then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
+        local character = LocalPlayer.Character
+        if not character then return end
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if flyBodyVelocity then
+            flyBodyVelocity:Destroy()
+        end
+
+        flyBodyVelocity = Instance.new("BodyVelocity")
+        flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        flyBodyVelocity.MaxForce = Vector3.new(0, 0, 0)
+        flyBodyVelocity.Parent = hrp
+
         LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        
-        local flyConnection
+
         flyConnection = RunService.Heartbeat:Connect(function()
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or not bodyVelocity then
-                flyConnection:Disconnect()
+            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or not flyBodyVelocity then
+                if flyConnection then
+                    flyConnection:Disconnect()
+                    flyConnection = nil
+                end
                 return
             end
-            
-            local root = LocalPlayer.Character.HumanoidRootPart
+
             local cam = Camera.CFrame
-            
             local forward = (cam.LookVector * Vector3.new(1, 0, 1)).Unit
             local right = (cam.RightVector * Vector3.new(1, 0, 1)).Unit
-            
+
             local velocity = Vector3.new(0, 0, 0)
-            
+
             if UIS:IsKeyDown(Enum.KeyCode.W) then velocity = velocity + forward end
             if UIS:IsKeyDown(Enum.KeyCode.S) then velocity = velocity - forward end
             if UIS:IsKeyDown(Enum.KeyCode.D) then velocity = velocity + right end
             if UIS:IsKeyDown(Enum.KeyCode.A) then velocity = velocity - right end
             if UIS:IsKeyDown(Enum.KeyCode.Space) then velocity = velocity + Vector3.new(0, 1, 0) end
             if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then velocity = velocity - Vector3.new(0, 1, 0) end
-            
+
             if velocity.Magnitude > 0 then
-                velocity = velocity.Unit * 50
+                velocity = velocity.Unit * flySpeed
             end
-            
-            bodyVelocity.Velocity = velocity
-            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+
+            flyBodyVelocity.Velocity = velocity
+            flyBodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
         end)
     else
+        if flyBodyVelocity then
+            flyBodyVelocity:Destroy()
+            flyBodyVelocity = nil
+        end
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            for _, v in ipairs(LocalPlayer.Character.HumanoidRootPart:GetChildren()) do
-                if v:IsA("BodyVelocity") then
-                    v:Destroy()
-                end
-            end
             LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
     end
 end)
 
--- Speed Feature
+-- Speed Feature with input box
+local speedValue = 16
+
 local speedToggle = createToggle(MovementTab, "Speed Hack", function(state)
     if state then
-        LocalPlayer.Character.Humanoid.WalkSpeed = 50
+        LocalPlayer.Character.Humanoid.WalkSpeed = speedValue
     else
         LocalPlayer.Character.Humanoid.WalkSpeed = 16
+    end
+end)
+
+local speedInputFrame = Instance.new("Frame")
+speedInputFrame.Size = UDim2.new(1, -20, 0, 30)
+speedInputFrame.Position = UDim2.new(0, 10, 0, 45 + (35 * (#MovementTab:GetChildren() - 1)))
+speedInputFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+speedInputFrame.BackgroundTransparency = 0.5
+speedInputFrame.BorderSizePixel = 0
+speedInputFrame.Parent = MovementTab
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0.7, 0, 1, 0)
+speedLabel.Position = UDim2.new(0, 10, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed Value"
+speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextSize = 12
+speedLabel.Parent = speedInputFrame
+
+local speedTextBox = Instance.new("TextBox")
+speedTextBox.Size = UDim2.new(0.3, 0, 1, 0)
+speedTextBox.Position = UDim2.new(0.7, 0, 0, 0)
+speedTextBox.Text = tostring(speedValue)
+speedTextBox.ClearTextOnFocus = false
+speedTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+speedTextBox.Font = Enum.Font.Gotham
+speedTextBox.TextSize = 12
+speedTextBox.Parent = speedInputFrame
+
+speedTextBox.FocusLost:Connect(function(enterPressed)
+    local val = tonumber(speedTextBox.Text)
+    if val and val >= 16 and val <= 100 then
+        speedValue = val
+        if speedToggle then
+            if speedToggle.Set then
+                speedToggle.Set(true)
+            end
+        end
+    else
+        speedTextBox.Text = tostring(speedValue)
     end
 end)
 
